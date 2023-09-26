@@ -73,18 +73,22 @@ public class DMSOpenKMFormOptionsBinder extends FormBinder implements FormLoadOp
             LogUtil.error(this.getClassName(), e, e.getMessage());
         }
 
-        ApiResponse getRootFolderApiResponse = getRootFolderApi(openkmURL + "/services/rest/folder/getPath/" + folderRootID, username, password, openkmURLHost, openkmURLPort);
-        if (getRootFolderApiResponse != null && getRootFolderApiResponse.getResponseCode() == 200) {
-            String rootPath = getRootFolderApiResponse.getResponseBody();
-            FormRow emptyRow = new FormRow();
-            emptyRow.setProperty(FormUtil.PROPERTY_VALUE, rootPath);
-            emptyRow.setProperty(FormUtil.PROPERTY_LABEL, rootPath);
-            emptyRow.setProperty(FormUtil.PROPERTY_GROUPING, "");
-            results.add(emptyRow);
-        }
-       
-        results = getChildrenFolders(results, openkmURL, folderRootID, username, password, openkmURLHost, openkmURLPort);
+        boolean formBuilderActive = FormUtil.isFormBuilderActive();
 
+        if (!formBuilderActive) {
+            ApiResponse getRootFolderApiResponse = getRootFolderApi(openkmURL + "/services/rest/folder/getPath/" + folderRootID, username, password, openkmURLHost, openkmURLPort);
+            if (getRootFolderApiResponse != null && getRootFolderApiResponse.getResponseCode() == 200) {
+                String rootPath = getRootFolderApiResponse.getResponseBody();
+                FormRow emptyRow = new FormRow();
+                emptyRow.setProperty(FormUtil.PROPERTY_VALUE, rootPath);
+                emptyRow.setProperty(FormUtil.PROPERTY_LABEL, rootPath);
+                emptyRow.setProperty(FormUtil.PROPERTY_GROUPING, "");
+                results.add(emptyRow);
+            }
+        
+            results = getChildrenFolders(results, openkmURL, folderRootID, username, password, openkmURLHost, openkmURLPort);
+
+        }
         return results;
     }
 
