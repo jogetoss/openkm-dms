@@ -3,6 +3,7 @@
 The OpenKM Document Management System (DMS) plugin facilitates the seamless integration of OpenKM and Joget. This integration currently utilises two plugin types:
 
 Form Options Binder - Retrieve folder paths from OpenKM.
+
 File Upload Element - Upload files to OpenKM. Bind folder paths from the select box field that uses the Form Options Binder. Able to choose whether to create folder that follows Joget form ID when uploading.
 
 
