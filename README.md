@@ -8,6 +8,8 @@ The OpenKM Document Management System (DMS) plugin facilitates the seamless inte
 
 * Datalist Formatter - Format datalist file upload column to download file from OpenKM directly.
 
+To setup and configure this plugin, please see the [documentation](https://dev.joget.org/community/display/marketplace/OpenKM+DMS+Plugin).
+
 
 # Getting Help
 
