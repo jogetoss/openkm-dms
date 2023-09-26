@@ -1,0 +1,253 @@
+[
+    {
+        "title": "@@org.joget.marketplace.openkmfileupload.config@@",
+        "properties": [
+            {
+                "name": "id",
+                "label": "@@org.joget.marketplace.openkmfileupload.id@@",
+                "type": "autocomplete",
+                "required": "True",
+                "regex_validation": "^[a-zA-Z0-9_]+$",
+                "validation_message": "@@org.joget.marketplace.openkmfileupload.invalidId@@",
+                "options_callback": "FormBuilder.getAllFieldOptions"
+            },
+            {
+                "name": "label",
+                "label": "@@org.joget.marketplace.openkmfileupload.label@@",
+                "type": "textfield",
+                "required": "True",
+                "value": "@@org.joget.marketplace.openkmfileupload.pluginLabel@@"
+            }
+        ]
+    },
+    {
+        "title": "@@org.joget.marketplace.openkmfileupload.advancedOptions@@",
+        "properties": [
+            {
+                "label": "@@org.joget.marketplace.openkmfileupload.data@@",
+                "type": "header"
+            },
+            {
+                "name": "validator",
+                "label": "@@org.joget.marketplace.openkmfileupload.validator@@",
+                "type": "elementselect",
+                "options_ajax": "[CONTEXT_PATH]/web/property/json/getElements?classname=org.joget.apps.form.model.FormValidator",
+                "url": "[CONTEXT_PATH]/web/property/json[APP_PATH]/getPropertyOptions"
+            },
+            {
+                "name": "maxSize",
+                "label": "@@org.joget.marketplace.openkmfileupload.maxSize@@",
+                "type": "textfield",
+                "regex_validation": "^[0-9]+$",
+                "validation_message": "@@org.joget.marketplace.openkmfileupload.invalidSize@@"
+            },
+            {
+                "name": "maxSizeMsg",
+                "label": "@@org.joget.marketplace.openkmfileupload.maxSize.msg@@",
+                "type": "textfield",
+                "value": "@@org.joget.marketplace.openkmfileupload.maxSize.msg.fileTooBig@@"
+            },
+            {
+                "name": "fileType",
+                "label": "@@org.joget.marketplace.openkmfileupload.fileType@@",
+                "type": "textfield"
+            },
+            {
+                "name": "fileTypeMsg",
+                "label": "@@org.joget.marketplace.openkmfileupload.fileType.msg@@",
+                "type": "textfield",
+                "value": "@@org.joget.marketplace.openkmfileupload.fileType.msg.invalidFileType@@"
+            },
+            {
+                "name": "removeFile",
+                "label": "@@org.joget.marketplace.openkmfileupload.removeFile@@",
+                "type": "checkbox",
+                "value": "false",
+                "options": [
+                    {
+                        "value": "true",
+                        "label": ""
+                    }
+                ]
+            },
+            {
+                "label": "@@org.joget.marketplace.openkmfileupload.resize@@",
+                "type": "header"
+            },
+            {
+                "name": "resizeWidth",
+                "label": "@@org.joget.marketplace.openkmfileupload.resizeWidth@@",
+                "type": "textfield"
+            },
+            {
+                "name": "resizeHeight",
+                "label": "@@org.joget.marketplace.openkmfileupload.resizeHeight@@",
+                "type": "textfield"
+            },
+            {
+                "name": "resizeQuality",
+                "label": "@@org.joget.marketplace.openkmfileupload.resizeQuality@@",
+                "type": "textfield",
+                "value": "0.8"
+            },
+            {
+                "name": "resizeMethod",
+                "label": "@@org.joget.marketplace.openkmfileupload.resizeMethod@@",
+                "type": "selectbox",
+                "value": "",
+                "options": [
+                    {
+                        "value": "",
+                        "label": "@@org.joget.marketplace.openkmfileupload.contain@@"
+                    },
+                    {
+                        "value": "crop",
+                        "label": "@@org.joget.marketplace.openkmfileupload.crop@@"
+                    }
+                ]
+            },
+            {
+                "label": "@@form.section.permission@@",
+                "type": "header"
+            },
+            {
+                "name": "permissionType",
+                "label": "@@form.section.permission@@",
+                "type": "selectbox",
+                "value": "",
+                "options": [
+                    {
+                        "value": "",
+                        "label": "@@org.joget.marketplace.openkmfileupload.permission.loggedInUsers@@"
+                    },
+                    {
+                        "value": "public",
+                        "label": "@@org.joget.marketplace.openkmfileupload.permission.public@@"
+                    },
+                    {
+                        "value": "custom",
+                        "label": "@@org.joget.marketplace.openkmfileupload.permission.custom@@"
+                    }
+                ]
+            },
+            {
+                "name": "permissionPlugin",
+                "label": "@@org.joget.marketplace.openkmfileupload.customPermission@@",
+                "type": "elementselect",
+                "control_field": "permissionType",
+                "control_value": "custom",
+                "control_use_regex": "false",
+                "required": "true",
+                "options_ajax": "[CONTEXT_PATH]/web/property/json/getElements?classname=org.joget.apps.form.model.FormPermission",
+                "url": "[CONTEXT_PATH]/web/property/json[APP_PATH]/getPropertyOptions"
+            },
+            {
+                "label": "@@org.joget.marketplace.openkmfileupload.ui@@",
+                "type": "header"
+            },
+            {
+                "name": "size",
+                "label": "@@org.joget.marketplace.openkmfileupload.size@@",
+                "type": "textfield"
+            },
+            {
+                "name": "multiple",
+                "label": "@@org.joget.marketplace.openkmfileupload.multiple@@",
+                "type": "checkbox",
+                "value": "False",
+                "options": [
+                    {
+                        "value": "true",
+                        "label": ""
+                    }
+                ]
+            },
+            {
+                "name": "readonly",
+                "label": "@@org.joget.marketplace.openkmfileupload.readonly@@",
+                "type": "checkbox",
+                "value": "False",
+                "options": [
+                    {
+                        "value": "true",
+                        "label": ""
+                    }
+                ]
+            },
+            {
+                "name": "padding",
+                "label": "@@org.joget.marketplace.openkmfileupload.dropzonePadding@@",
+                "type": "textfield"
+            },
+            {
+                "name": "attachment",
+                "label": "@@org.joget.marketplace.openkmfileupload.download@@",
+                "type": "checkbox",
+                "value": "true",
+                "options": [
+                    {
+                        "value": "true",
+                        "label": ""
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "title": "@@org.joget.marketplace.openkmfileupload.openkmConfig@@",
+        "properties": [
+            {
+                "label": "@@org.joget.marketplace.openkmfileupload.credentials@@",
+                "type": "header",
+                "description": "@@org.joget.marketplace.openkmfileupload.credentialsDesc@@"
+            },
+            {
+                "name": "username",
+                "label": "@@org.joget.marketplace.openkmfileupload.username@@",
+                "type": "textfield",
+                "required": "True"
+            },
+            {
+                "name": "password",
+                "label": "@@org.joget.marketplace.openkmfileupload.password@@",
+                "type": "password",
+                "required": "True"
+            },
+            {
+                "name": "openkmURL",
+                "label": "@@org.joget.marketplace.openkmfileupload.openkmURL@@",
+                "type": "textfield",
+                "required": "True"
+            },
+            {
+                "label": "@@org.joget.marketplace.openkmfileupload.fieldMappings@@",
+                "type": "header",
+                "description": "@@org.joget.marketplace.openkmfileupload.fieldMappingsDesc@@"
+            },
+            {
+                "name":"formDefId",
+                "label":"@@org.joget.marketplace.openkmfileupload.formDefId@@",
+                "type":"selectbox",
+                "options_ajax":"[CONTEXT_PATH]/web/json/console/app[APP_PATH]/forms/options"
+             },
+             {
+                "name":"openkmFileUploadPath",
+                "label":"@@org.joget.marketplace.openkmfileupload.openkmFileUploadPath@@",
+                "type":"selectbox",
+                "options_ajax_on_change":"formDefId",
+                "options_ajax":"[CONTEXT_PATH]/web/json/console/app[APP_PATH]/form/columns/options"
+             },
+             {
+                "name":"createFolderFormID",
+                "label":"@@org.joget.marketplace.openkmfileupload.createFolderFormID@@",
+                "type":"checkbox",
+                "options":[
+                   {
+                      "value":"true",
+                      "label":""
+                   }
+                ]
+             }
+        ]
+    }
+]

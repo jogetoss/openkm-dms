@@ -1,0 +1,31 @@
+[
+    {
+        "title": "@@org.joget.marketplace.openkmformoptionsbinder.config@@",
+        "properties": [
+            {
+                "name": "username",
+                "label": "@@org.joget.marketplace.openkmformoptionsbinder.username@@",
+                "type": "textfield",
+                "required": "True"
+            },
+            {
+                "name": "password",
+                "label": "@@org.joget.marketplace.openkmformoptionsbinder.password@@",
+                "type": "password",
+                "required": "True"
+            },
+            {
+                "name": "openkmURL",
+                "label": "@@org.joget.marketplace.openkmformoptionsbinder.openkmURL@@",
+                "type": "textfield",
+                "required": "True"
+            },
+            {
+                "name": "folderRootID",
+                "label": "@@org.joget.marketplace.openkmformoptionsbinder.folderRootID@@",
+                "type": "textfield",
+                "required": "True"
+            }
+        ]
+    }
+]
