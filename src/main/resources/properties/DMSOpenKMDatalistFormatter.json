@@ -1,0 +1,47 @@
+[
+    {
+        "title": "@@org.joget.marketplace.openkmdatalistformatter.config@@",
+        "properties": [
+            {
+                "label": "@@org.joget.marketplace.openkmdatalistformatter.credentials@@",
+                "type": "header",
+                "description": "@@org.joget.marketplace.openkmdatalistformatter.credentialsDesc@@"
+            },
+            {
+                "name": "username",
+                "label": "@@org.joget.marketplace.openkmdatalistformatter.username@@",
+                "type": "textfield",
+                "required": "True"
+            },
+            {
+                "name": "password",
+                "label": "@@org.joget.marketplace.openkmdatalistformatter.password@@",
+                "type": "password",
+                "required": "True"
+            },
+            {
+                "name": "openkmURL",
+                "label": "@@org.joget.marketplace.openkmdatalistformatter.openkmURL@@",
+                "type": "textfield",
+                "required": "True"
+            },
+            {
+                "label": "@@org.joget.marketplace.openkmdatalistformatter.fieldMappings@@",
+                "type": "header"
+            },
+            {
+                "name":"formDefId",
+                "label":"@@org.joget.marketplace.openkmdatalistformatter.formDefId@@",
+                "type":"selectbox",
+                "options_ajax":"[CONTEXT_PATH]/web/json/console/app[APP_PATH]/forms/options"
+             },
+             {
+                "name":"openkmFileUploadPath",
+                "label":"@@org.joget.marketplace.openkmdatalistformatter.openkmFileUploadPath@@",
+                "type":"selectbox",
+                "options_ajax_on_change":"formDefId",
+                "options_ajax":"[CONTEXT_PATH]/web/json/console/app[APP_PATH]/form/columns/options"
+             }
+        ]
+    }
+]

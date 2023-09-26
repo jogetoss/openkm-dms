@@ -16,6 +16,7 @@ public class Activator implements BundleActivator {
         //Register plugin here
         registrationList.add(context.registerService(DMSOpenKMFileUpload.class.getName(), new DMSOpenKMFileUpload(), null));
         registrationList.add(context.registerService(DMSOpenKMFormOptionsBinder.class.getName(), new DMSOpenKMFormOptionsBinder(), null));
+        registrationList.add(context.registerService(DMSOpenKMDatalistFormatter.class.getName(), new DMSOpenKMDatalistFormatter(), null));
     }
 
     public void stop(BundleContext context) {

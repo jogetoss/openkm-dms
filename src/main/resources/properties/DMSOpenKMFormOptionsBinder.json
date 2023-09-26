@@ -3,6 +3,11 @@
         "title": "@@org.joget.marketplace.openkmformoptionsbinder.config@@",
         "properties": [
             {
+                "label": "@@org.joget.marketplace.openkmformoptionsbinder.credentials@@",
+                "type": "header",
+                "description": "@@org.joget.marketplace.openkmformoptionsbinder.credentialsDesc@@"
+            },
+            {
                 "name": "username",
                 "label": "@@org.joget.marketplace.openkmformoptionsbinder.username@@",
                 "type": "textfield",
