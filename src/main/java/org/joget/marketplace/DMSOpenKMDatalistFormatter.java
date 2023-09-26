@@ -56,8 +56,8 @@ public class DMSOpenKMDatalistFormatter extends DataListColumnFormatDefault {
                 String openkmURL = getPropertyString("openkmURL");
                 String protocol = "";
                 String hostAndPort = "";
-                String formDefId = getPropertyString("formDefId");
                 String openkmFileUploadPathField = getPropertyString("openkmFileUploadPath");
+                String openkmFileUploadPath = "";
         
                 try {
                     URL url = new URL(openkmURL);
@@ -67,12 +67,15 @@ public class DMSOpenKMDatalistFormatter extends DataListColumnFormatDefault {
                     LogUtil.error(this.getClassName(), e, e.getMessage());
                 }
 
-                String openkmFileUploadPath = (String) LookupUtil.getBeanProperty(row, openkmFileUploadPathField);
+                // get file path of this record
+                if (openkmFileUploadPathField != null && !openkmFileUploadPathField.equals("")) {
+                    openkmFileUploadPath = (String) LookupUtil.getBeanProperty(row, openkmFileUploadPathField);
+                } else {
+                    openkmFileUploadPath = "/okm:root";
+                }
+
                 AppDefinition appDef = AppUtil.getCurrentAppDefinition();
                 result = "";
-
-                //get the id of this record
-                String primaryKeyValue = (String) LookupUtil.getBeanProperty(row, dataList.getBinder().getPrimaryKeyColumnName());
                 
                 HttpServletRequest request = WorkflowUtil.getHttpServletRequest();
 
