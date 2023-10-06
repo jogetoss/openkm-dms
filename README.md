@@ -1,6 +1,6 @@
 # Description
 
-The OpenKM Document Management System (DMS) plugin facilitates the seamless integration of OpenKM and Joget. This integration currently utilises two plugin types:
+The OpenKM Document Management System (DMS) plugin facilitates the seamless integration of OpenKM and Joget. This integration currently utilises these plugin types:
 
 * Form Options Binder - Retrieve folder paths from OpenKM.
 
