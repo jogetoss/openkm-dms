@@ -55,7 +55,7 @@ public class DMSOpenKMFileUpload extends FileUpload {
 
     @Override
     public String getVersion() {
-        return "8.0.1";
+        return Activator.VERSION;
     }
 
     @Override

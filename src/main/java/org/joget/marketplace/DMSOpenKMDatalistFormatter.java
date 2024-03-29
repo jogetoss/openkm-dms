@@ -24,7 +24,7 @@ public class DMSOpenKMDatalistFormatter extends DataListColumnFormatDefault {
     }
 
     public String getVersion() {
-        return "8.0.1";
+        return Activator.VERSION;
     }
     
     public String getClassName() {

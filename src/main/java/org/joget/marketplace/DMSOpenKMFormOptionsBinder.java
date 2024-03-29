@@ -25,7 +25,7 @@ public class DMSOpenKMFormOptionsBinder extends FormBinder implements FormLoadOp
     }
 
     public String getVersion() {
-        return "8.0.1";
+        return Activator.VERSION;
     }
 
     public String getDescription() {
