@@ -10,7 +10,6 @@ import java.util.HashSet;
 import java.util.List;
 
 import org.joget.apps.form.lib.FileUpload;
-import org.joget.apps.form.model.Element;
 import org.joget.apps.form.model.Form;
 
 import java.io.File;
@@ -26,22 +25,6 @@ import org.joget.apps.app.model.AppDefinition;
 import org.joget.apps.app.service.AppPluginUtil;
 import org.joget.apps.app.service.AppService;
 import org.joget.apps.app.service.AppUtil;
-import org.apache.http.HttpEntity;
-import org.apache.http.auth.AuthScope;
-import org.apache.http.auth.UsernamePasswordCredentials;
-import org.apache.http.client.CredentialsProvider;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.ContentType;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.entity.mime.HttpMultipartMode;
-import org.apache.http.entity.mime.MultipartEntityBuilder;
-import org.apache.http.impl.client.BasicCredentialsProvider;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.util.EntityUtils;
 import org.joget.apps.form.model.FormData;
 import org.joget.apps.form.model.FormRow;
 import org.joget.apps.form.model.FormRowSet;
@@ -52,6 +35,7 @@ import org.joget.commons.util.LogUtil;
 import org.joget.commons.util.SecurityUtil;
 import org.joget.commons.util.StringUtil;
 import org.joget.marketplace.model.ApiResponse;
+import org.joget.marketplace.util.DMSOpenKMUtil;
 import org.json.JSONObject;
 import org.springframework.context.ApplicationContext;
 
@@ -71,7 +55,7 @@ public class DMSOpenKMFileUpload extends FileUpload {
 
     @Override
     public String getVersion() {
-        return "8.0.0";
+        return "8.0.1";
     }
 
     @Override
@@ -95,6 +79,7 @@ public class DMSOpenKMFileUpload extends FileUpload {
 
     @Override
     public String renderTemplate(FormData formData, Map dataModel) {
+        DMSOpenKMUtil openkmUtil = new DMSOpenKMUtil();
         String template = "fileUpload.ftl";
 
         String username = getPropertyString("username");
@@ -121,7 +106,7 @@ public class DMSOpenKMFileUpload extends FileUpload {
         if (Boolean.parseBoolean(dataModel.get("includeMetaData").toString())) {
             try {
                 //check if openkm authentication is true
-                ApiResponse authApiResponse = authApi(openkmURL + "/services/rest/auth/login", username, password, openkmURLHost, openkmURLPort);
+                ApiResponse authApiResponse = openkmUtil.authApi(openkmURL + "/services/rest/auth/login", username, password, openkmURLHost, openkmURLPort);
                 if (authApiResponse != null && authApiResponse.getResponseCode() != 204) {
                     dataModel.put("error", "Authentication ERROR");
                 }
@@ -152,52 +137,59 @@ public class DMSOpenKMFileUpload extends FileUpload {
             appVersion = appDef.getVersion().toString();
         }
 
-        for (String value : values) {
-            // check if the file is in temp file
-            File file = FileManager.getFileByPath(value);
-            
-            if (file != null) {
-                tempFilePaths.put(value, file.getName());
-            } else if (value != null && !value.isEmpty()) {
-                // determine actual path for the file uploads
-                String fileName = value;
-                String encodedFileName = fileName;
-                if (fileName != null) {
-                    try {
-                        encodedFileName = URLEncoder.encode(fileName, "UTF8").replaceAll("\\+", "%20");
-                    } catch (UnsupportedEncodingException ex) {
-                        // ignore
-                    }
-                }
-      
-                // get openKM file path value
-                ApplicationContext ac = AppUtil.getApplicationContext();
-                AppService appService = (AppService) ac.getBean("appService");
-                String openkmFileUploadPath = "";
-                FormRow row = new FormRow();
-                FormRowSet rowSet = appService.loadFormData(appId, appVersion, formDefId, primaryKeyValue);
-                if (rowSet != null && !rowSet.isEmpty()) {
-                    row = rowSet.get(0);
-                    openkmFileUploadPath = row.getProperty(openkmFileUploadPathField);
-                    if (openkmFileUploadPath == null) {
-                        if(createFolderFormID.equals("true")){
-                            openkmFileUploadPath = "/okm:root/" + primaryKeyValue;
-                        } else {
-                            openkmFileUploadPath = "/okm:root";
+        if(values.length != 0){
+            if(!values[0].isEmpty()){
+                for (String value : values) {
+                    // check if the file is in temp file
+                    Map<String, String> fileMap = parseFileName(value);
+                    value = fileMap.get("filename");
+                    String documentId = fileMap.get("documentId");
+                    File file = FileManager.getFileByPath(value);
+                    
+                    if (file != null) {
+                        tempFilePaths.put(value, file.getName());
+                    } else if (value != null && !value.isEmpty()) {
+                        // determine actual path for the file uploads
+                        String fileName = value;
+                        String encodedFileName = fileName;
+                        if (fileName != null) {
+                            try {
+                                encodedFileName = URLEncoder.encode(fileName, "UTF8").replaceAll("\\+", "%20");
+                            } catch (UnsupportedEncodingException ex) {
+                                // ignore
+                            }
                         }
+            
+                        // get openKM file path value
+                        ApplicationContext ac = AppUtil.getApplicationContext();
+                        AppService appService = (AppService) ac.getBean("appService");
+                        String openkmFileUploadPath = "";
+                        FormRow row = new FormRow();
+                        FormRowSet rowSet = appService.loadFormData(appId, appVersion, formDefId, primaryKeyValue);
+                        if (rowSet != null && !rowSet.isEmpty()) {
+                            row = rowSet.get(0);
+                            openkmFileUploadPath = row.getProperty(openkmFileUploadPathField);
+                            if (openkmFileUploadPath == null) {
+                                if(createFolderFormID.equals("true")){
+                                    openkmFileUploadPath = "/okm:root/" + primaryKeyValue;
+                                } else {
+                                    openkmFileUploadPath = "/okm:root";
+                                }
+                            }
+                        }
+                        
+                        jsonParams.put("protocol", protocol);
+                        jsonParams.put("username", username);
+                        jsonParams.put("password", password);
+                        jsonParams.put("hostAndPort", hostAndPort);
+                        jsonParams.put("openkmFileUploadPath", openkmFileUploadPath);
+                        jsonParams.put("fileName", fileName);
+                        String params = StringUtil.escapeString(SecurityUtil.encrypt(jsonParams.toString()), StringUtil.TYPE_URL, null);
+
+                        String filePath = "/web/json/app/" + appId + "/" + appVersion + "/plugin/org.joget.marketplace.DMSOpenKMFileUpload/service?action=download&params=" + params;
+                        filePaths.put(filePath, value);
                     }
                 }
-                
-                jsonParams.put("protocol", protocol);
-                jsonParams.put("username", username);
-                jsonParams.put("password", password);
-                jsonParams.put("hostAndPort", hostAndPort);
-                jsonParams.put("openkmFileUploadPath", openkmFileUploadPath);
-                jsonParams.put("fileName", fileName);
-                String params = StringUtil.escapeString(SecurityUtil.encrypt(jsonParams.toString()), StringUtil.TYPE_URL, null);
-
-                String filePath = "/web/json/app/" + appId + "/" + appVersion + "/plugin/org.joget.marketplace.DMSOpenKMFileUpload/service?action=download&params=" + params;
-                filePaths.put(filePath, value);
             }
         }
         
@@ -218,7 +210,36 @@ public class DMSOpenKMFileUpload extends FileUpload {
     }
 
     @Override
+    public FormData formatDataForValidation(FormData formData) {
+        String filePathPostfix = "_path";
+        String id = FormUtil.getElementParameterName(this);
+        if (id != null) {
+            String[] tempFilenames = formData.getRequestParameterValues(id);
+            String[] tempExisting = formData.getRequestParameterValues(id + filePathPostfix);
+            
+            List<String> filenames = new ArrayList<String>();
+            if (tempFilenames != null && tempFilenames.length > 0) {
+                filenames.addAll(Arrays.asList(tempFilenames));
+            }
+
+            if (tempExisting != null && tempExisting.length > 0) {
+                filenames.addAll(Arrays.asList(tempExisting));
+            }
+
+            if (filenames.isEmpty()) {
+                formData.addRequestParameterValues(id, new String[]{""});
+            } else if (!"true".equals(getPropertyString("multiple"))) {
+                formData.addRequestParameterValues(id, new String[]{filenames.get(0)});
+            } else {
+                formData.addRequestParameterValues(id, filenames.toArray(new String[]{}));
+            }
+        }
+        return formData;
+    }
+
+    @Override
     public FormRowSet formatData(FormData formData) {
+        DMSOpenKMUtil openkmUtil = new DMSOpenKMUtil();
         String username = getPropertyString("username");
         String password = getPropertyString("password");
         String openkmURL = getPropertyString("openkmURL");
@@ -232,6 +253,7 @@ public class DMSOpenKMFileUpload extends FileUpload {
         String openkmURLHost = "";
         Integer openkmURLPort = 0;
         String folderName = "";
+        String documentId = "";
 
         try {
             URL url = new URL(openkmURL);
@@ -247,9 +269,10 @@ public class DMSOpenKMFileUpload extends FileUpload {
         String id = getPropertyString(FormUtil.PROPERTY_ID);
         
         Set<String> remove = null;
+        Form form = new Form();
         if ("true".equals(getPropertyString("removeFile"))) {
             remove = new HashSet<String>();
-            Form form = FormUtil.findRootForm(this);
+            form = FormUtil.findRootForm(this);
             String originalValues = formData.getLoadBinderDataProperty(form, id);
             if (originalValues != null) {
                 remove.addAll(Arrays.asList(originalValues.split(";")));
@@ -264,53 +287,101 @@ public class DMSOpenKMFileUpload extends FileUpload {
                 FormRow result = new FormRow();
                 List<String> resultedValue = new ArrayList<String>();
                 List<String> filePaths = new ArrayList<String>();
-                
+                folderName =  formData.getPrimaryKeyValue();
+
                 for (String value : values) {
                     // check if the file is in temp file
                     File file = FileManager.getFileByPath(value);
                     if (file != null) {
-                        filePaths.add(value);
-                        resultedValue.add(file.getName());
-                        
                         // write file to openKM
                         if(createFolderFormID.equals("true")){
-                            folderName = createFolderApi(openkmURL + "/services/rest/folder/createSimple",  username, password, openkmURLHost, openkmURLPort, formData.getPrimaryKeyValue(), openkmFileUploadPath);
+                            if (!openkmFileUploadPath.contains(folderName)) {
+                                openkmUtil.createFolderApi(openkmURL + "/services/rest/folder/createSimple",  username, password, openkmURLHost, openkmURLPort, folderName, openkmFileUploadPath);
+                            } else {
+                                folderName = "";
+                            }
+                        } else {
+                            folderName = "";
                         }
-                        ApiResponse createFileApiResponse = createFileApi(openkmURL + "/services/rest/document/createSimple", username, password, openkmURLHost, openkmURLPort, file.getName(), file, folderName, openkmFileUploadPath);    
-                        if (createFileApiResponse != null && createFileApiResponse.getResponseCode() != 200) {
-                            LogUtil.info(getClassName(), createFileApiResponse.getResponseBody());
-                        }
+                        documentId = openkmUtil.createFileApi(openkmURL + "/services/rest/document/createSimple", username, password, openkmURLHost, openkmURLPort, file.getName(), file, folderName, openkmFileUploadPath);    
+
+                        filePaths.add(value + "|" + documentId);
+                        resultedValue.add(file.getName() + "|" + documentId);
                     } else {
                         if (remove != null && !value.isEmpty()) {
-                            remove.remove(value);
+                            // remove.remove(value);
+                            remove.removeIf(item -> {
+                                    if (item.contains(value)) {
+                                        resultedValue.add(item);
+                                        return true;
+                                    }
+                                return false;
+                            });
+                        } else {
+                             folderName = "";
                         }
-                        resultedValue.add(value);
-
                     }
                 }
                 
-                // if (!filePaths.isEmpty()) {
-                //     result.putTempFilePath(id, filePaths.toArray(new String[]{}));
-                // }
+                if (!filePaths.isEmpty()) {
+                    result.putTempFilePath(id, filePaths.toArray(new String[]{}));
+                }
                 
-                if (remove != null) {
+                 if (remove != null && !remove.isEmpty() && !remove.contains("")) {
                     result.putDeleteFilePath(id, remove.toArray(new String[]{}));
+                    for (String r : remove) {
+                        Map<String, String> fileMap = parseFileName(r);
+                        documentId = fileMap.get("documentId");
+                    
+                        // delete file(s) from openkm
+                        ApiResponse deleteFileApiResponse = openkmUtil.deleteApi(openkmURL + "/services/rest/document/delete?docId=" + documentId, username, password, openkmURLHost, openkmURLPort);    
+                        if (deleteFileApiResponse != null && deleteFileApiResponse.getResponseCode() != 204) {
+                            LogUtil.info(getClassName(), deleteFileApiResponse.getResponseBody());
+                        }
+
+                        // delete folder that contains the file above
+                        if ("true".equals(getPropertyString("removeFolder"))) {
+                            ApiResponse getFolderIdApiResponse = openkmUtil.getApi(openkmURL + "/services/rest/repository/getNodeUuid?nodePath=" + openkmFileUploadPath, username, password, openkmURLHost, openkmURLPort);
+                            if (getFolderIdApiResponse != null && getFolderIdApiResponse.getResponseCode() == 200) {
+                                String folderId = getFolderIdApiResponse.getResponseBody();
+
+                                ApiResponse deleteFolderApiResponse = openkmUtil.deleteApi(openkmURL + "/services/rest/folder/delete?fldId=" + folderId, username, password, openkmURLHost, openkmURLPort);    
+                                if (deleteFolderApiResponse != null && deleteFolderApiResponse.getResponseCode() != 204) {
+                                    LogUtil.info(getClassName(), deleteFolderApiResponse.getResponseBody());
+                                } else {
+                                    folderName = "";
+                                }
+                            } else {
+                                LogUtil.info(getClassName(), getFolderIdApiResponse.getResponseBody());
+                            }
+                        }
+                    }
                 }
                 
                 // formulate values
-                String delimitedValue = FormUtil.generateElementPropertyValues(resultedValue.toArray(new String[]{}));
+                String delimitedValue = FormUtil.generateElementPropertyValues(resultedValue.toArray(new String[] {}));
                 String paramName = FormUtil.getElementParameterName(this);
-                formData.addRequestParameterValues(paramName, resultedValue.toArray(new String[]{}));
-                        
-                // set value into Properties and FormRowSet object
-                result.setProperty(id, delimitedValue);
-                 // modify path field
-                 if(createFolderFormID.equals("true") && !openkmFileUploadPathField.equals("")){
-                    result.setProperty(openkmFileUploadPathField, openkmFileUploadPath + "/" + folderName);                
+                formData.addRequestParameterValues(paramName, resultedValue.toArray(new String[] {}));
+
+                // modify path field
+                if (createFolderFormID.equals("true") && !openkmFileUploadPathField.equals("")) {
+                    if (!openkmFileUploadPath.contains(folderName)) {
+                        result.setProperty(openkmFileUploadPathField, openkmFileUploadPath + "/" + folderName);
+                    } else {
+                        result.setProperty(openkmFileUploadPathField, openkmFileUploadPath);
+                    }
                 }
+
+                // set value into Properties and FormRowSet object
+                if (delimitedValue == null) {
+                    delimitedValue = "";
+                    result.setProperty(openkmFileUploadPathField, "");
+                }
+                result.setProperty(id, delimitedValue);
+
                 rowSet = new FormRowSet();
                 rowSet.add(result);
-                
+
                 String filePathPostfix = "_path";
                 formData.addRequestParameterValues(id + filePathPostfix, new String[]{});
             }
@@ -340,88 +411,23 @@ public class DMSOpenKMFileUpload extends FileUpload {
         }
     }
 
-    protected ApiResponse authApi(String endPoint, String username, String password, String openkmURLHost,Integer openkmURLPort) {
-        ApiResponse apiResponse = null;
-        HttpClientBuilder clientbuilder = HttpClients.custom();
-        HttpGet getRequest = new HttpGet(endPoint);
-        getRequest.addHeader("Accept", "application/xml");
+    public Map<String, String> parseFileName(String input) {
+        Map<String, String> resultMap = new HashMap<>();
 
-        CredentialsProvider credentialsPovider = new BasicCredentialsProvider();
-        credentialsPovider.setCredentials(new AuthScope(openkmURLHost, openkmURLPort), 
-        new UsernamePasswordCredentials(username, password));
-        clientbuilder = clientbuilder.setDefaultCredentialsProvider(credentialsPovider);
-        
-        CloseableHttpClient httpclient = clientbuilder.build();
+        // Split the input based on "|"
+        String[] parts = input.split("\\|");
 
-        try {
-            apiResponse = new ApiResponse();      
-            CloseableHttpResponse httpresponse = httpclient.execute(getRequest);
-            apiResponse.setResponseCode(httpresponse.getStatusLine().getStatusCode());
-        } catch (Exception ex) {
-            LogUtil.error(getClass().getName(), ex, ex.getMessage());
+        if (parts.length == 2) {
+            // Extract the filename (part before "|")
+            String filename = parts[0].trim();
+            String documentId = parts[1].trim();
+
+            resultMap.put("filename", filename);
+            resultMap.put("documentId", documentId);
+        } else {
+            LogUtil.info(getClassName(), "Invalid input format.");
         }
-        return apiResponse;
-    }
 
-    protected String createFolderApi(String endPoint, String username, String password, String openkmURLHost,Integer openkmURLPort, String folderName, String openkmFileUploadPath) {
-        ApiResponse apiResponse = null;
-        HttpClientBuilder clientbuilder = HttpClients.custom();
-        HttpPost postRequest = new HttpPost(endPoint);
-        postRequest.addHeader("Accept", "application/json");
-        postRequest.addHeader("Content-Type", "application/json");
-
-        CredentialsProvider credentialsPovider = new BasicCredentialsProvider();
-        credentialsPovider.setCredentials(new AuthScope(openkmURLHost, openkmURLPort), 
-        new UsernamePasswordCredentials(username, password));
-        clientbuilder = clientbuilder.setDefaultCredentialsProvider(credentialsPovider);
-        
-        CloseableHttpClient httpclient = clientbuilder.build();
-
-        try {
-            apiResponse = new ApiResponse();
-            
-            StringEntity requestEntity = new StringEntity(openkmFileUploadPath + "/" + folderName, ContentType.APPLICATION_JSON);
-            postRequest.setEntity(requestEntity);
-            
-            CloseableHttpResponse httpresponse = httpclient.execute(postRequest);
-            apiResponse.setResponseCode(httpresponse.getStatusLine().getStatusCode());
-            apiResponse.setResponseBody(EntityUtils.toString(httpresponse.getEntity()));
-        } catch (Exception ex) {
-            LogUtil.error(getClass().getName(), ex, ex.getMessage());
-        }
-        return folderName; 
-    }
-
-    protected ApiResponse createFileApi(String endPoint, String username, String password, String openkmURLHost, Integer openkmURLPort, String fileName, File file, String folderName, String openkmFileUploadPath) {
-        ApiResponse apiResponse = null;
-        HttpClientBuilder clientbuilder = HttpClients.custom();
-        HttpPost postRequest = new HttpPost(endPoint);
-        postRequest.addHeader("Accept", "application/json");
-        //postRequest.addHeader("Content-Type", "multipart/form-data;charset=UTF-8");
-
-        CredentialsProvider credentialsPovider = new BasicCredentialsProvider();
-        credentialsPovider.setCredentials(new AuthScope(openkmURLHost, openkmURLPort), 
-        new UsernamePasswordCredentials(username, password));
-        clientbuilder = clientbuilder.setDefaultCredentialsProvider(credentialsPovider);
-
-        CloseableHttpClient httpclient = clientbuilder.build();
-
-        try {
-            apiResponse = new ApiResponse();
-
-            HttpEntity requestEntity = MultipartEntityBuilder.create()
-            .setMode(HttpMultipartMode.BROWSER_COMPATIBLE)
-            .addBinaryBody("content", file, ContentType.DEFAULT_BINARY, fileName)
-            .addTextBody("docPath", openkmFileUploadPath + "/" + folderName + "/" + fileName)
-            .build();
-            postRequest.setEntity(requestEntity);
-            
-            CloseableHttpResponse httpresponse = httpclient.execute(postRequest);
-            apiResponse.setResponseCode(httpresponse.getStatusLine().getStatusCode());
-            apiResponse.setResponseBody(EntityUtils.toString(httpresponse.getEntity()));
-        } catch (Exception ex) {
-            LogUtil.error(getClass().getName(), ex, ex.getMessage());
-        }
-        return apiResponse; 
+        return resultMap;
     }
 }

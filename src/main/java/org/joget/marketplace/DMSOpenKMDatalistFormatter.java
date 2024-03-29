@@ -1,8 +1,6 @@
 package org.joget.marketplace;
 
-import java.io.UnsupportedEncodingException;
 import java.net.URL;
-import java.net.URLEncoder;
 import javax.servlet.http.HttpServletRequest;
 import org.displaytag.util.LookupUtil;
 import org.joget.apps.app.model.AppDefinition;
@@ -26,7 +24,7 @@ public class DMSOpenKMDatalistFormatter extends DataListColumnFormatDefault {
     }
 
     public String getVersion() {
-        return "8.0.0";
+        return "8.0.1";
     }
     
     public String getClassName() {
@@ -48,12 +46,16 @@ public class DMSOpenKMDatalistFormatter extends DataListColumnFormatDefault {
     }
 
     public String format(DataList dataList, DataListColumn column, Object row, Object value) {
-        String result = (String) value;
-        if (result != null && !result.isEmpty()) {
+        StringBuilder result = new StringBuilder();
+        if (value != null) {
+            String[] values = value.toString().split(";");
             try {
+                AppDefinition appDef = AppUtil.getCurrentAppDefinition();
+                HttpServletRequest request = WorkflowUtil.getHttpServletRequest();
                 String username = getPropertyString("username");
                 String password = getPropertyString("password");
                 String openkmURL = getPropertyString("openkmURL");
+                String enableDownload = getPropertyString("enableDownload");
                 String protocol = "";
                 String hostAndPort = "";
                 String openkmFileUploadPathField = getPropertyString("openkmFileUploadPath");
@@ -74,45 +76,43 @@ public class DMSOpenKMDatalistFormatter extends DataListColumnFormatDefault {
                     openkmFileUploadPath = "/okm:root";
                 }
 
-                AppDefinition appDef = AppUtil.getCurrentAppDefinition();
-                result = "";
-                
-                HttpServletRequest request = WorkflowUtil.getHttpServletRequest();
+                JSONObject jsonParams = new JSONObject();
+                jsonParams.put("protocol", protocol);
+                jsonParams.put("username", username);
+                jsonParams.put("password", password);
+                jsonParams.put("hostAndPort", hostAndPort);
+                jsonParams.put("openkmFileUploadPath", openkmFileUploadPath);
 
-                //suport for multi values
-                for (String v : value.toString().split(";")) {
-                    if (!v.isEmpty()) {
-                        // determine actual path for the file uploads
-                        String fileName = v;
-                        String encodedFileName = fileName;
-                        try {
-                            encodedFileName = URLEncoder.encode(fileName, "UTF8").replaceAll("\\+", "%20");
-                        } catch (UnsupportedEncodingException ex) {
-                            // ignore
+                for (String v : values) {
+                    if (v != null && !v.isEmpty()) {
+                        String[] verticalBarSplit = v.split("\\|");
+                        if (verticalBarSplit.length > 0) {
+                            String filename = verticalBarSplit[0];
+                            String documentId = verticalBarSplit[1];
+                            jsonParams.put("fileName", filename);
+                            String params = StringUtil.escapeString(SecurityUtil.encrypt(jsonParams.toString()), StringUtil.TYPE_URL, null);
+                            if ("true".equalsIgnoreCase(enableDownload)) {
+                                String filePath = request.getContextPath() + "/web/json/app/" + appDef.getAppId() + "/" + appDef.getVersion().toString() + "/plugin/org.joget.marketplace.DMSOpenKMFileUpload/service?action=download&params=" + params;
+                                String downloadUrl = "<a href=\"" + filePath + "\" target=\"_blank\">" + filename + "</a>";
+                                result.append(downloadUrl);
+                            } else {
+                                result.append(filename);
+                            }
+                            result.append(";");
                         }
-
-                        JSONObject jsonParams = new JSONObject();
-                        jsonParams.put("protocol", protocol);
-                        jsonParams.put("username", username);
-                        jsonParams.put("password", password);
-                        jsonParams.put("hostAndPort", hostAndPort);
-                        jsonParams.put("openkmFileUploadPath", openkmFileUploadPath);
-                        jsonParams.put("fileName", v);
-                        String params = StringUtil.escapeString(SecurityUtil.encrypt(jsonParams.toString()), StringUtil.TYPE_URL, null);
-
-                        String filePath = request.getContextPath() + "/web/json/app/" + appDef.getAppId() + "/" + appDef.getVersion().toString() + "/plugin/org.joget.marketplace.DMSOpenKMFileUpload/service?action=download&params=" + params;
-
-                        if (!result.isEmpty()) {
-                            result += ", ";
-                        }
-
-                        result += "<a href=\""+filePath+"\" target=\"_blank\">"+StringUtil.stripAllHtmlTag(fileName)+"</a>";
+    
+                    } else {
+                        result.append(v);
                     }
+    
+                }
+                if (result.length() > 0) {
+                    result.deleteCharAt(result.length() - 1);
                 }
             } catch (Exception e) {
                 LogUtil.error(getClassName(), e, "");
             }
         }
-        return result;
+        return result.toString();
     }
 }

@@ -1,16 +1,6 @@
 package org.joget.marketplace;
 
 import java.net.URL;
-import org.apache.http.auth.AuthScope;
-import org.apache.http.auth.UsernamePasswordCredentials;
-import org.apache.http.client.CredentialsProvider;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.BasicCredentialsProvider;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.util.EntityUtils;
 import org.joget.apps.app.service.AppPluginUtil;
 import org.joget.apps.app.service.AppUtil;
 import org.joget.apps.form.model.Element;
@@ -22,6 +12,7 @@ import org.joget.apps.form.model.FormRowSet;
 import org.joget.apps.form.service.FormUtil;
 import org.joget.commons.util.LogUtil;
 import org.joget.marketplace.model.ApiResponse;
+import org.joget.marketplace.util.DMSOpenKMUtil;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -34,7 +25,7 @@ public class DMSOpenKMFormOptionsBinder extends FormBinder implements FormLoadOp
     }
 
     public String getVersion() {
-        return "8.0.0";
+        return "8.0.1";
     }
 
     public String getDescription() {
@@ -54,6 +45,7 @@ public class DMSOpenKMFormOptionsBinder extends FormBinder implements FormLoadOp
     }
     
     public FormRowSet load(Element element, String primaryKey, FormData formData) {
+        DMSOpenKMUtil openkmUtil = new DMSOpenKMUtil();
         FormRowSet results = new FormRowSet();
         results.setMultiRow(true);
 
@@ -76,7 +68,7 @@ public class DMSOpenKMFormOptionsBinder extends FormBinder implements FormLoadOp
         boolean formBuilderActive = FormUtil.isFormBuilderActive();
 
         if (!formBuilderActive) {
-            ApiResponse getRootFolderApiResponse = getRootFolderApi(openkmURL + "/services/rest/folder/getPath/" + folderRootID, username, password, openkmURLHost, openkmURLPort);
+            ApiResponse getRootFolderApiResponse = openkmUtil.getApi(openkmURL + "/services/rest/folder/getPath/" + folderRootID, username, password, openkmURLHost, openkmURLPort);
             if (getRootFolderApiResponse != null && getRootFolderApiResponse.getResponseCode() == 200) {
                 String rootPath = getRootFolderApiResponse.getResponseBody();
                 FormRow emptyRow = new FormRow();
@@ -92,8 +84,9 @@ public class DMSOpenKMFormOptionsBinder extends FormBinder implements FormLoadOp
         return results;
     }
 
-    protected FormRowSet getChildrenFolders(FormRowSet results, String openkmURL, String folderRootID, String username, String password, String openkmURLHost,Integer openkmURLPort) {
-        ApiResponse getChildrenFoldersApiResponse = getChildrenFoldersApi(openkmURL + "/services/rest/folder/getChildren?fldId=" + folderRootID, username, password, openkmURLHost, openkmURLPort);
+      public FormRowSet getChildrenFolders(FormRowSet results, String openkmURL, String folderRootID, String username, String password, String openkmURLHost,Integer openkmURLPort) {
+        DMSOpenKMUtil openkmUtil = new DMSOpenKMUtil();
+        ApiResponse getChildrenFoldersApiResponse = openkmUtil.getApi(openkmURL + "/services/rest/folder/getChildren?fldId=" + folderRootID, username, password, openkmURLHost, openkmURLPort);
         JSONObject jsonObjectFolders = new JSONObject(getChildrenFoldersApiResponse.getResponseBody());
         
         if (jsonObjectFolders.length() != 0) {
@@ -115,7 +108,7 @@ public class DMSOpenKMFormOptionsBinder extends FormBinder implements FormLoadOp
         return results;
     }
 
-    protected void getFolderObject(JSONObject folderObject, FormRowSet results, String openkmURL, String folderRootID, String username, String password, String openkmURLHost,Integer openkmURLPort) {
+    public void getFolderObject(JSONObject folderObject, FormRowSet results, String openkmURL, String folderRootID, String username, String password, String openkmURLHost,Integer openkmURLPort) {
         String path = folderObject.getString("path");
         if (path != null && !path.equals("")) {
             FormRow emptyRow = new FormRow();
@@ -127,53 +120,5 @@ public class DMSOpenKMFormOptionsBinder extends FormBinder implements FormLoadOp
             String childrenFolderID = folderObject.getString("uuid");
             getChildrenFolders(results, openkmURL, childrenFolderID, username, password, openkmURLHost, openkmURLPort);
         }
-    }
-
-    protected ApiResponse getRootFolderApi(String endPoint, String username, String password, String openkmURLHost,Integer openkmURLPort) {
-        ApiResponse apiResponse = null;
-        HttpClientBuilder clientbuilder = HttpClients.custom();
-        HttpGet getRequest = new HttpGet(endPoint);
-        getRequest.addHeader("Accept", "application/xml");
-
-        CredentialsProvider credentialsPovider = new BasicCredentialsProvider();
-        credentialsPovider.setCredentials(new AuthScope(openkmURLHost, openkmURLPort), 
-        new UsernamePasswordCredentials(username, password));
-        clientbuilder = clientbuilder.setDefaultCredentialsProvider(credentialsPovider);
-        
-        CloseableHttpClient httpclient = clientbuilder.build();
-
-        try {
-            apiResponse = new ApiResponse();      
-            CloseableHttpResponse httpresponse = httpclient.execute(getRequest);
-            apiResponse.setResponseCode(httpresponse.getStatusLine().getStatusCode());
-            apiResponse.setResponseBody(EntityUtils.toString(httpresponse.getEntity()));
-        } catch (Exception ex) {
-            LogUtil.error(getClass().getName(), ex, ex.getMessage());
-        }
-        return apiResponse;
-    }
-
-    protected ApiResponse getChildrenFoldersApi(String endPoint, String username, String password, String openkmURLHost,Integer openkmURLPort) {
-        ApiResponse apiResponse = null;
-        HttpClientBuilder clientbuilder = HttpClients.custom();
-        HttpGet getRequest = new HttpGet(endPoint);
-        getRequest.addHeader("Accept", "application/json");
-
-        CredentialsProvider credentialsPovider = new BasicCredentialsProvider();
-        credentialsPovider.setCredentials(new AuthScope(openkmURLHost, openkmURLPort), 
-        new UsernamePasswordCredentials(username, password));
-        clientbuilder = clientbuilder.setDefaultCredentialsProvider(credentialsPovider);
-        
-        CloseableHttpClient httpclient = clientbuilder.build();
-
-        try {
-            apiResponse = new ApiResponse();      
-            CloseableHttpResponse httpresponse = httpclient.execute(getRequest);
-            apiResponse.setResponseCode(httpresponse.getStatusLine().getStatusCode());
-            apiResponse.setResponseBody(EntityUtils.toString(httpresponse.getEntity()));
-        } catch (Exception ex) {
-            LogUtil.error(getClass().getName(), ex, ex.getMessage());
-        }
-        return apiResponse;
     }
 }

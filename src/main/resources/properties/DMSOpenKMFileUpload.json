@@ -59,18 +59,6 @@
                 "value": "@@org.joget.marketplace.openkmfileupload.fileType.msg.invalidFileType@@"
             },
             {
-                "name": "removeFile",
-                "label": "@@org.joget.marketplace.openkmfileupload.removeFile@@",
-                "type": "checkbox",
-                "value": "false",
-                "options": [
-                    {
-                        "value": "true",
-                        "label": ""
-                    }
-                ]
-            },
-            {
                 "label": "@@org.joget.marketplace.openkmfileupload.resize@@",
                 "type": "header"
             },
@@ -247,7 +235,34 @@
                       "label":""
                    }
                 ]
-             }
+             },
+             {
+                "name": "removeFile",
+                "label": "@@org.joget.marketplace.openkmfileupload.removeFile@@",
+                "type": "checkbox",
+                "value": "false",
+                "options": [
+                    {
+                        "value": "true",
+                        "label": ""
+                    }
+                ]
+            },
+             {
+                "name": "removeFolder",
+                "label": "@@org.joget.marketplace.openkmfileupload.removeFolder@@",
+                "description": "@@ org.joget.marketplace.openkmfileupload.removeFolder.desc@@",
+                "type": "checkbox",
+                "value": "false",
+                "control_field":"createFolderFormID",
+                "control_value":"true",
+                "options": [
+                    {
+                        "value": "true",
+                        "label": ""
+                    }
+                ]
+            }
         ]
     }
 ]
