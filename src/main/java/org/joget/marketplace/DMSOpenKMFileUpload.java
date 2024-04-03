@@ -339,20 +339,22 @@ public class DMSOpenKMFileUpload extends FileUpload {
                             LogUtil.info(getClassName(), deleteFileApiResponse.getResponseBody());
                         }
 
-                        // delete folder that contains the file above
-                        if ("true".equals(getPropertyString("removeFolder"))) {
-                            ApiResponse getFolderIdApiResponse = openkmUtil.getApi(openkmURL + "/services/rest/repository/getNodeUuid?nodePath=" + openkmFileUploadPath, username, password, openkmURLHost, openkmURLPort);
-                            if (getFolderIdApiResponse != null && getFolderIdApiResponse.getResponseCode() == 200) {
-                                String folderId = getFolderIdApiResponse.getResponseBody();
+                        if (resultedValue.size() == 0) {
+                            // delete folder that contains the file above
+                            if ("true".equals(getPropertyString("removeFolder"))) {
+                                ApiResponse getFolderIdApiResponse = openkmUtil.getApi(openkmURL + "/services/rest/repository/getNodeUuid?nodePath=" + openkmFileUploadPath, username, password, openkmURLHost, openkmURLPort);
+                                if (getFolderIdApiResponse != null && getFolderIdApiResponse.getResponseCode() == 200) {
+                                    String folderId = getFolderIdApiResponse.getResponseBody();
 
-                                ApiResponse deleteFolderApiResponse = openkmUtil.deleteApi(openkmURL + "/services/rest/folder/delete?fldId=" + folderId, username, password, openkmURLHost, openkmURLPort);    
-                                if (deleteFolderApiResponse != null && deleteFolderApiResponse.getResponseCode() != 204) {
-                                    LogUtil.info(getClassName(), deleteFolderApiResponse.getResponseBody());
+                                    ApiResponse deleteFolderApiResponse = openkmUtil.deleteApi(openkmURL + "/services/rest/folder/delete?fldId=" + folderId, username, password, openkmURLHost, openkmURLPort);    
+                                    if (deleteFolderApiResponse != null && deleteFolderApiResponse.getResponseCode() != 204) {
+                                        LogUtil.info(getClassName(), deleteFolderApiResponse.getResponseBody());
+                                    } else {
+                                        folderName = "";
+                                    }
                                 } else {
-                                    folderName = "";
+                                    LogUtil.info(getClassName(), getFolderIdApiResponse.getResponseBody());
                                 }
-                            } else {
-                                LogUtil.info(getClassName(), getFolderIdApiResponse.getResponseBody());
                             }
                         }
                     }
