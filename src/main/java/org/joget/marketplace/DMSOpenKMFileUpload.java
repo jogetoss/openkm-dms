@@ -38,7 +38,6 @@ import org.joget.marketplace.model.ApiResponse;
 import org.joget.marketplace.util.DMSOpenKMUtil;
 import org.json.JSONObject;
 import org.springframework.context.ApplicationContext;
-import org.springframework.security.access.method.P;
 
 public class DMSOpenKMFileUpload extends FileUpload {
     private final static String MESSAGE_PATH = "messages/DMSOpenKMFileUpload";
@@ -324,13 +323,38 @@ public class DMSOpenKMFileUpload extends FileUpload {
                         }
                     }
                 }
-                
-                 if (remove != null && !remove.isEmpty() && !remove.contains("")) {
+
+                // create new version instead of replace file
+                List<String> checkoutDocs = new ArrayList<String>(); 
+                Set<String> update = new HashSet<String>(remove);
+                if (filesList != null && !filesList.isEmpty()) {
+                    for (File file : filesList) {
+                        for (String r : update) {
+                            Map<String, String> fileMap = parseFileName(r);
+                            documentId = fileMap.get("documentId");
+                            if(r.contains(file.getName())){
+                                if (getPropertyString("sameFileUpload").equals("version")) {
+                                    // checkout file to replace version
+                                    ApiResponse checkoutApiResponse = openkmUtil.getApi(openkmURL + "/services/rest/document/checkout?docId=" + documentId, username, password, openkmURLHost, openkmURLPort);
+                                    if (checkoutApiResponse != null && checkoutApiResponse.getResponseCode() == 204) {
+                                        checkoutDocs.add(r);
+                                        remove.remove(r);
+                                    } else {
+                                        LogUtil.info(getClassName(), checkoutApiResponse.getResponseBody());
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (remove != null && !remove.isEmpty() && !remove.contains("")) {
                     result.putDeleteFilePath(id, remove.toArray(new String[]{}));
                     for (String r : remove) {
                         Map<String, String> fileMap = parseFileName(r);
                         documentId = fileMap.get("documentId");
-                    
+                       
+                        
                         // delete file(s) from openkm
                         ApiResponse deleteFileApiResponse = openkmUtil.deleteApi(openkmURL + "/services/rest/document/delete?docId=" + documentId, username, password, openkmURLHost, openkmURLPort);    
                         if (deleteFileApiResponse != null && deleteFileApiResponse.getResponseCode() != 204) {
@@ -360,6 +384,7 @@ public class DMSOpenKMFileUpload extends FileUpload {
 
                 if (filesList != null && !filesList.isEmpty()) {
                     for (File file : filesList) {
+                        boolean fileProcessed = false;
                         // write file to openKM
                         if(createFolderFormID.equals("true")){
                             if (!openkmFileUploadPath.contains(folderName)) {
@@ -371,11 +396,45 @@ public class DMSOpenKMFileUpload extends FileUpload {
                             folderName = "";
                         }
                      
-                        documentId = openkmUtil.createFileApi(openkmURL + "/services/rest/document/createSimple", username, password, openkmURLHost, openkmURLPort, file.getName(), file, folderName, openkmFileUploadPath);    
-                       
+                        // file deleted and create new file
+                        if (getPropertyString("sameFileUpload").equals("replace")){
+                            documentId = openkmUtil.createFileApi(openkmURL + "/services/rest/document/createSimple", username, password, openkmURLHost, openkmURLPort, file.getName(), file, folderName, openkmFileUploadPath);    
+                            LogUtil.info(getClassName(), "Successfully replaced file \"" + file.getName() + "\" at OpenKM");
+                        }  else if (getPropertyString("sameFileUpload").equals("version")){
+                             // if successful checkout, only checkin (update file)
+                            if (!checkoutDocs.isEmpty() && checkoutDocs.size() != 0) {
+                                for (String checkoutDoc : checkoutDocs) {
+                                    if(checkoutDoc.contains(file.getName())){
+                                        Map<String, String> fileMap = parseFileName(checkoutDoc);
+                                        documentId = fileMap.get("documentId");
+                                        String version = openkmUtil.updateFileAfterCheckoutApi(openkmURL + "/services/rest/document/checkin", username, password, openkmURLHost, openkmURLPort, file.getName(), file, documentId);    
+                                        LogUtil.info(getClassName(), "Successfully updated file version of \"" + version + "\" for file \"" + file.getName() + "\" at OpenKM");
+                                        fileProcessed = true;
+                                        break;
+                                    }
+                                }
+                            }
+
+                            if (!fileProcessed) { 
+                                // create new file
+                                documentId = openkmUtil.createFileApi(openkmURL + "/services/rest/document/createSimple", username, password, openkmURLHost, openkmURLPort, file.getName(), file, folderName, openkmFileUploadPath);    
+                                LogUtil.info(getClassName(), "Successfully created file \"" + file.getName() + "\" at OpenKM");
+                            }
+                        }
+
                         if (documentId == null){
                             formData.addFormError(id, "File \"" + file.getName() + "\" already exists at OpenKM");
                         } else {
+                            // lock file
+                            if (getPropertyString("lockFile").equals("true")){
+                                ApiResponse checkoutApiResponse = openkmUtil.putApi(openkmURL + "/services/rest/document/lock?docId=" + documentId, username, password, openkmURLHost, openkmURLPort);
+                                if (checkoutApiResponse != null && checkoutApiResponse.getResponseCode() == 200) {
+                                    LogUtil.info(getClassName(), "Successfully lock file \"" + file.getName() + "\" at OpenKM");
+                                } else {
+                                    LogUtil.info(getClassName(), checkoutApiResponse.getResponseBody());
+                                }
+                            }
+
                             filePaths.add(file.getName() + "|" + documentId);
                             resultedValue.add(file.getName() + "|" + documentId);
                         }

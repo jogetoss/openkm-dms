@@ -10,6 +10,7 @@ import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpPut;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.BasicCredentialsProvider;
@@ -117,6 +118,36 @@ public class DMSOpenKMUtil {
         return documentId;
     }
 
+    public String updateFileAfterCheckoutApi(String endPoint, String username, String password, String openkmURLHost, Integer openkmURLPort, String fileName, File file, String documentId) {
+        String version = "";
+        OkHttpClient client = new OkHttpClient().newBuilder()
+                .build();
+        RequestBody body = new MultipartBody.Builder().setType(MultipartBody.FORM)
+                .addFormDataPart("docId", documentId)
+                .addFormDataPart("content", fileName, RequestBody.create(file, MediaType.parse("application/octet-stream")))
+                .build();
+        Request request = new Request.Builder()
+                .url(endPoint)
+                .method("POST", body)
+                .addHeader("Accept", "application/json")
+                .addHeader("Authorization", "Basic b2ttQWRtaW46YWRtaW4=")
+                .build();
+        try (Response response = client.newCall(request).execute()) {
+            // Handle the response
+            if (response.isSuccessful()) {
+                String responseBody = response.body().string();
+                JSONObject jSONObject = new JSONObject(responseBody);
+                version = jSONObject.get("name").toString();
+            } else {
+                LogUtil.info(getClass().getName(), "Request failed: " + Integer.toString(response.code()));
+                return null;
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return version;
+    }
+
     public ApiResponse deleteApi(String endPoint, String username, String password, String openkmURLHost, Integer openkmURLPort) {
         ApiResponse apiResponse = null;
         HttpClientBuilder clientbuilder = HttpClients.custom();
@@ -157,7 +188,35 @@ public class DMSOpenKMUtil {
             apiResponse = new ApiResponse();      
             CloseableHttpResponse httpresponse = httpclient.execute(getRequest);
             apiResponse.setResponseCode(httpresponse.getStatusLine().getStatusCode());
-            apiResponse.setResponseBody(EntityUtils.toString(httpresponse.getEntity()));
+            if (httpresponse.getEntity()!=null) {
+                apiResponse.setResponseBody(EntityUtils.toString(httpresponse.getEntity()));
+            }
+        } catch (Exception ex) {
+            LogUtil.error(getClass().getName(), ex, ex.getMessage());
+        }
+        return apiResponse;
+    }
+
+    public ApiResponse putApi(String endPoint, String username, String password, String openkmURLHost,Integer openkmURLPort) {
+        ApiResponse apiResponse = null;
+        HttpClientBuilder clientbuilder = HttpClients.custom();
+        HttpPut putRequest = new HttpPut(endPoint);
+        putRequest.addHeader("Accept", "application/json");
+
+        CredentialsProvider credentialsPovider = new BasicCredentialsProvider();
+        credentialsPovider.setCredentials(new AuthScope(openkmURLHost, openkmURLPort), 
+        new UsernamePasswordCredentials(username, password));
+        clientbuilder = clientbuilder.setDefaultCredentialsProvider(credentialsPovider);
+        
+        CloseableHttpClient httpclient = clientbuilder.build();
+
+        try {
+            apiResponse = new ApiResponse();      
+            CloseableHttpResponse httpresponse = httpclient.execute(putRequest);
+            apiResponse.setResponseCode(httpresponse.getStatusLine().getStatusCode());
+            if (httpresponse.getEntity()!=null) {
+                apiResponse.setResponseBody(EntityUtils.toString(httpresponse.getEntity()));
+            }
         } catch (Exception ex) {
             LogUtil.error(getClass().getName(), ex, ex.getMessage());
         }
