@@ -216,6 +216,25 @@ public class DMSOpenKMFileUpload extends FileUpload {
         if (id != null) {
             String[] tempFilenames = formData.getRequestParameterValues(id);
             String[] tempExisting = formData.getRequestParameterValues(id + filePathPostfix);
+
+            // bind id to file names
+            String[] fileWithIds = FormUtil.getElementPropertyValues(this, formData);
+
+            if (tempExisting != null && tempExisting.length > 0) {
+                for (int i = 0; i < tempExisting.length; i++) {
+                    for (int j = 0; j < fileWithIds.length; j++) {
+                        String[] parts = fileWithIds[j].split("\\|");
+                        if (parts.length == 2) {
+                            String filename = parts[0];
+                            String docid = parts[1];
+        
+                            if (tempExisting[i].equals(filename)) {
+                                tempExisting[i] = tempExisting[i] + "|" + docid;
+                            }
+                        }
+                    }
+                }
+            }
             
             List<String> filenames = new ArrayList<String>();
             if (tempFilenames != null && tempFilenames.length > 0) {
