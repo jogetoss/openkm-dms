@@ -123,6 +123,24 @@ public class DMSOpenKMFileUpload extends FileUpload {
                 
         String primaryKeyValue = getPrimaryKeyValue(formData);
         String formDefId = "";
+
+        String filePathPostfix = "_path";
+        String id = FormUtil.getElementParameterName(this);
+
+        // check is there a stored value
+        Boolean fromTemp = false;
+        String storedValue = formData.getStoreBinderDataProperty(this);
+        if (storedValue != null) {
+            values = storedValue.split(";");
+        } else {
+            // if there is no stored value, get the temp files
+            String[] tempExisting = formData.getRequestParameterValues(id + filePathPostfix);
+
+            if (tempExisting != null && tempExisting.length > 0) {
+                values = tempExisting;
+            }
+        }
+
         Form form = FormUtil.findRootForm(this);
         if (form != null) {
             formDefId = form.getPropertyString(FormUtil.PROPERTY_ID);
@@ -142,8 +160,10 @@ public class DMSOpenKMFileUpload extends FileUpload {
                 for (String value : values) {
                     // check if the file is in temp file
                     Map<String, String> fileMap = parseFileName(value);
-                    value = fileMap.get("filename");
-                    String documentId = fileMap.get("documentId");
+                    if(fileMap.get("filename") != null){
+                        value = fileMap.get("filename");
+                        String documentId = fileMap.get("documentId");
+                    }                    
                     File file = FileManager.getFileByPath(value);
                     
                     if (file != null) {
