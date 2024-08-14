@@ -10,6 +10,7 @@ import java.util.HashSet;
 import java.util.List;
 
 import org.joget.apps.form.lib.FileUpload;
+import org.joget.apps.form.model.Element;
 import org.joget.apps.form.model.Form;
 
 import java.io.File;
@@ -28,7 +29,6 @@ import org.joget.apps.app.service.AppUtil;
 import org.joget.apps.form.model.FormData;
 import org.joget.apps.form.model.FormRow;
 import org.joget.apps.form.model.FormRowSet;
-import org.joget.apps.form.model.FormStoreBinder;
 import org.joget.apps.form.service.FormUtil;
 import org.joget.commons.util.FileManager;
 import org.joget.commons.util.LogUtil;
@@ -36,12 +36,12 @@ import org.joget.commons.util.SecurityUtil;
 import org.joget.commons.util.StringUtil;
 import org.joget.marketplace.model.ApiResponse;
 import org.joget.marketplace.util.DMSOpenKMUtil;
+import org.joget.workflow.util.WorkflowUtil;
 import org.json.JSONObject;
 import org.springframework.context.ApplicationContext;
 
 public class DMSOpenKMFileUpload extends FileUpload {
     private final static String MESSAGE_PATH = "messages/DMSOpenKMFileUpload";
-    FormStoreBinder storeBinder;
 
     @Override
     public String getName() {
@@ -278,6 +278,72 @@ public class DMSOpenKMFileUpload extends FileUpload {
 
     @Override
     public FormRowSet formatData(FormData formData) {
+        ApplicationContext ac = AppUtil.getApplicationContext();
+        AppService appService = (AppService) ac.getBean("appService");
+        AppDefinition appDef = AppUtil.getCurrentAppDefinition();
+        Set<String> remove = new HashSet<String>();
+        //check if it is embed form used in form grid
+        HttpServletRequest request = WorkflowUtil.getHttpServletRequest();
+        if (request != null && request.getRequestURL().toString().contains("/form/embed")) {
+            FormRowSet rowSet = null;
+            Form form = FormUtil.findRootForm(this);
+            String id = getPropertyString(FormUtil.PROPERTY_ID);
+
+            if ("true".equals(getPropertyString("removeFile"))) {
+                remove = new HashSet<String>();
+                String originalValues = formData.getLoadBinderDataProperty(form, id);
+
+                if (originalValues != null) {
+                    remove.addAll(Arrays.asList(originalValues.split(";")));
+                }
+            }
+
+            // get value
+            if (id != null) {
+                String[] values = FormUtil.getElementPropertyValues(this, formData);
+                if (values != null && values.length > 0) {
+                    // set value into Properties and FormRowSet object
+                    FormRow result = new FormRow();
+                    List<String> tempResultedValue = new ArrayList<String>();
+                    List<String> tempFilePaths = new ArrayList<String>();
+                             
+                    for (String value : values) {                 
+                        // check if the file is in temp file
+                        File file = FileManager.getFileByPath(value);
+                        if (file != null) {
+                            tempFilePaths.add(value);
+                            tempResultedValue.add(file.getName()); 
+                        } else {
+                            if (remove != null && !value.isEmpty()) {
+                                remove.remove(value);
+                            }
+                            tempResultedValue.add(value);
+                        }                                          
+                    }      
+                    
+                    if(tempResultedValue.isEmpty()){
+                        for (String value : values) {                 
+                            result.setProperty(id, value);
+                            rowSet = new FormRowSet();
+                            rowSet.add(result);                             
+                        }  
+                    } else {
+                        // formulate values
+                        String delimitedValue = FormUtil.generateElementPropertyValues(tempResultedValue.toArray(new String[]{}));
+                        // set temp value into Properties and FormRowSet object
+                        result.setProperty(id, delimitedValue);
+                        rowSet = new FormRowSet();
+                        rowSet.add(result);
+                    }
+
+                    
+                    String filePathPostfix = "_path";
+                    formData.addRequestParameterValues(id + filePathPostfix, new String[]{});
+                }
+            }
+
+            return rowSet;
+        }
         DMSOpenKMUtil openkmUtil = new DMSOpenKMUtil();
         String username = getPropertyString("username");
         String password = getPropertyString("password");
@@ -307,7 +373,6 @@ public class DMSOpenKMFileUpload extends FileUpload {
 
         String id = getPropertyString(FormUtil.PROPERTY_ID);
         
-        Set<String> remove = new HashSet<String>();
         Set<String> existing = new HashSet<String>();
         Form form = new Form();
         form = FormUtil.findRootForm(this);
@@ -317,6 +382,20 @@ public class DMSOpenKMFileUpload extends FileUpload {
                 remove.addAll(Arrays.asList(originalValues.split(";")));
             } else {
                 existing.addAll(Arrays.asList(originalValues.split(";")));
+            }
+        } else {
+            // if data is from child from instead of parent form
+            FormData formData2 = new FormData();
+            formData2.setPrimaryKeyValue(formData.getPrimaryKeyValue());
+            Form loadForm = appService.viewDataForm(appDef.getId(), appDef.getVersion().toString(), form.getPropertyString(FormUtil.PROPERTY_ID), null, null, null, formData2, null, null);
+            Element el = FormUtil.findElement(getPropertyString(FormUtil.PROPERTY_ID), loadForm, formData2);
+            String formvalue = FormUtil.getElementPropertyValue(el, formData2);
+            if (formvalue != null) {
+                if ("true".equals(getPropertyString("removeFile"))) {
+                    remove.addAll(Arrays.asList(formvalue.split(";")));
+                } else {
+                    existing.addAll(Arrays.asList(formvalue.split(";")));
+                }
             }
         }
         
@@ -424,7 +503,7 @@ public class DMSOpenKMFileUpload extends FileUpload {
                 if (filesList != null && !filesList.isEmpty()) {
                     for (File file : filesList) {
                         boolean fileProcessed = false;
-                        // write file to openKM
+                        // create folder in openKM
                         if(createFolderFormID.equals("true")){
                             if (!openkmFileUploadPath.contains(folderName)) {
                                 openkmUtil.createFolderApi(openkmURL + "/services/rest/folder/createSimple",  username, password, openkmURLHost, openkmURLPort, folderName, openkmFileUploadPath);
@@ -438,7 +517,9 @@ public class DMSOpenKMFileUpload extends FileUpload {
                         // file deleted and create new file
                         if (getPropertyString("sameFileUpload").equals("replace")){
                             documentId = openkmUtil.createFileApi(openkmURL + "/services/rest/document/createSimple", username, password, openkmURLHost, openkmURLPort, file.getName(), file, folderName, openkmFileUploadPath);    
-                            LogUtil.info(getClassName(), "Successfully replaced file \"" + file.getName() + "\" at OpenKM");
+                            if (documentId != null){
+                                LogUtil.info(getClassName(), "Successfully replaced file \"" + file.getName() + "\" at OpenKM");
+                            }
                         }  else if (getPropertyString("sameFileUpload").equals("version")){
                              // if successful checkout, only checkin (update file)
                             if (!checkoutDocs.isEmpty() && checkoutDocs.size() != 0) {
@@ -457,7 +538,9 @@ public class DMSOpenKMFileUpload extends FileUpload {
                             if (!fileProcessed) { 
                                 // create new file
                                 documentId = openkmUtil.createFileApi(openkmURL + "/services/rest/document/createSimple", username, password, openkmURLHost, openkmURLPort, file.getName(), file, folderName, openkmFileUploadPath);    
-                                LogUtil.info(getClassName(), "Successfully created file \"" + file.getName() + "\" at OpenKM");
+                                if (documentId != null){
+                                    LogUtil.info(getClassName(), "Successfully created file \"" + file.getName() + "\" at OpenKM");
+                                }
                             }
                         }
 
