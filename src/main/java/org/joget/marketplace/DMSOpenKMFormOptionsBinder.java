@@ -87,23 +87,30 @@ public class DMSOpenKMFormOptionsBinder extends FormBinder implements FormLoadOp
       public FormRowSet getChildrenFolders(FormRowSet results, String openkmURL, String folderRootID, String username, String password, String openkmURLHost,Integer openkmURLPort) {
         DMSOpenKMUtil openkmUtil = new DMSOpenKMUtil();
         ApiResponse getChildrenFoldersApiResponse = openkmUtil.getApi(openkmURL + "/services/rest/folder/getChildren?fldId=" + folderRootID, username, password, openkmURLHost, openkmURLPort);
-        JSONObject jsonObjectFolders = new JSONObject(getChildrenFoldersApiResponse.getResponseBody());
-        
-        if (jsonObjectFolders.length() != 0) {
-            Object folderData = jsonObjectFolders.get("folder");
+        if(getChildrenFoldersApiResponse.getResponseBody().startsWith("{")){
+            JSONObject jsonObjectFolders = new JSONObject(getChildrenFoldersApiResponse.getResponseBody());
+            
+            if (jsonObjectFolders.length() != 0) {
+                Object folderData = jsonObjectFolders.get("folder");
 
-            if (folderData instanceof JSONObject) {
-                JSONObject folderObject = (JSONObject) folderData;
-                getFolderObject(folderObject, results, openkmURL, folderRootID, username, password, openkmURLHost, openkmURLPort);
-
-            } else if (folderData instanceof JSONArray) {
-                JSONArray multipleFolders = (JSONArray) folderData;
-                for (int i = 0; i < multipleFolders.length(); i++) {
-                    JSONObject folderObject = multipleFolders.getJSONObject(i);
+                if (folderData instanceof JSONObject) {
+                    JSONObject folderObject = (JSONObject) folderData;
                     getFolderObject(folderObject, results, openkmURL, folderRootID, username, password, openkmURLHost, openkmURLPort);
-                  
+
+                } else if (folderData instanceof JSONArray) {
+                    JSONArray multipleFolders = (JSONArray) folderData;
+                    for (int i = 0; i < multipleFolders.length(); i++) {
+                        JSONObject folderObject = multipleFolders.getJSONObject(i);
+                        getFolderObject(folderObject, results, openkmURL, folderRootID, username, password, openkmURLHost, openkmURLPort);
+                    
+                    }
                 }
             }
+        } else {
+            FormRow emptyRow = new FormRow();
+            emptyRow.setProperty(FormUtil.PROPERTY_VALUE, "Unable to retrieve value from OpenKM");
+            emptyRow.setProperty(FormUtil.PROPERTY_LABEL, "Unable to retrieve value from OpenKM");
+            results.add(emptyRow);
         }
         return results;
     }
