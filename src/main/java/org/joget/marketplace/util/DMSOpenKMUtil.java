@@ -2,6 +2,7 @@ package org.joget.marketplace.util;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Base64;
 
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
@@ -89,6 +90,9 @@ public class DMSOpenKMUtil {
 
     public String createFileApi(String endPoint, String username, String password, String openkmURLHost, Integer openkmURLPort, String fileName, File file, String folderName, String openkmFileUploadPath) {
         String documentId = "";
+        String auth = username + ":" + password;
+        String encodedAuth = Base64.getEncoder().encodeToString(auth.getBytes());
+
         OkHttpClient client = new OkHttpClient().newBuilder()
                 .build();
         RequestBody body = new MultipartBody.Builder().setType(MultipartBody.FORM)
@@ -100,7 +104,7 @@ public class DMSOpenKMUtil {
                 .url(endPoint)
                 .method("POST", body)
                 .addHeader("Accept", "application/json")
-                .addHeader("Authorization", "Basic b2ttQWRtaW46YWRtaW4=")
+                .addHeader("Authorization", "Basic " + encodedAuth)
                 .build();
         try (Response response = client.newCall(request).execute()) {
             // Handle the response
@@ -120,6 +124,9 @@ public class DMSOpenKMUtil {
 
     public String updateFileAfterCheckoutApi(String endPoint, String username, String password, String openkmURLHost, Integer openkmURLPort, String fileName, File file, String documentId) {
         String version = "";
+        String auth = username + ":" + password;
+        String encodedAuth = Base64.getEncoder().encodeToString(auth.getBytes());
+
         OkHttpClient client = new OkHttpClient().newBuilder()
                 .build();
         RequestBody body = new MultipartBody.Builder().setType(MultipartBody.FORM)
@@ -130,7 +137,7 @@ public class DMSOpenKMUtil {
                 .url(endPoint)
                 .method("POST", body)
                 .addHeader("Accept", "application/json")
-                .addHeader("Authorization", "Basic b2ttQWRtaW46YWRtaW4=")
+                .addHeader("Authorization", "Basic " + encodedAuth)
                 .build();
         try (Response response = client.newCall(request).execute()) {
             // Handle the response
