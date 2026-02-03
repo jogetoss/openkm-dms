@@ -36,6 +36,25 @@ public class DMSOpenKMUtil {
         return getClass().getName();
     }
 
+    /**
+     * Utility method to log API errors in a consistent way.
+     * Prints out the response code and message (response body).
+     */
+    public static void logApiError(String context, ApiResponse apiResponse) {
+        if (apiResponse == null) {
+            LogUtil.error(DMSOpenKMUtil.class.getName(), null, context + " - ApiResponse is null");
+            return;
+        }
+
+        String body = apiResponse.getResponseBody();
+        String message = (body != null && !body.isEmpty()) ? body : "No response body";
+        LogUtil.error(
+            DMSOpenKMUtil.class.getName(),
+            null,
+            context + " - Error Code=" + apiResponse.getResponseCode() + ", Message=" + message
+        );
+    }
+
     // file upload usage
     public ApiResponse authApi(String endPoint, String username, String password, String openkmURLHost,Integer openkmURLPort) {
         ApiResponse apiResponse = null;
@@ -55,12 +74,12 @@ public class DMSOpenKMUtil {
             CloseableHttpResponse httpresponse = httpclient.execute(getRequest);
             apiResponse.setResponseCode(httpresponse.getStatusLine().getStatusCode());
         } catch (Exception ex) {
-            LogUtil.error(getClass().getName(), ex, ex.getMessage());
+            LogUtil.error(getClass().getName(), ex, "Error calling authApi: " + ex.getMessage());
         }
         return apiResponse;
     }
 
-    public void createFolderApi(String endPoint, String username, String password, String openkmURLHost,Integer openkmURLPort, String folderName, String openkmFileUploadPath) {
+    public ApiResponse createFolderApi(String endPoint, String username, String password, String openkmURLHost,Integer openkmURLPort, String folderName, String openkmFileUploadPath) {
         ApiResponse apiResponse = null;
         HttpClientBuilder clientbuilder = HttpClients.custom();
         HttpPost postRequest = new HttpPost(endPoint);
@@ -84,8 +103,14 @@ public class DMSOpenKMUtil {
             apiResponse.setResponseCode(httpresponse.getStatusLine().getStatusCode());
             apiResponse.setResponseBody(EntityUtils.toString(httpresponse.getEntity()));
         } catch (Exception ex) {
-            LogUtil.error(getClass().getName(), ex, ex.getMessage());
+            LogUtil.error(getClass().getName(), ex, "Error calling createFolderApi: " + ex.getMessage());
+            if (apiResponse == null) {
+                apiResponse = new ApiResponse();
+            }
+            apiResponse.setResponseCode(500);
+            apiResponse.setResponseBody(ex.getMessage());
         }
+        return apiResponse;
     }
 
     public String createFileApi(String endPoint, String username, String password, String openkmURLHost, Integer openkmURLPort, String fileName, File file, String folderName, String openkmFileUploadPath) {
@@ -113,11 +138,15 @@ public class DMSOpenKMUtil {
                 JSONObject jSONObject = new JSONObject(responseBody);
                 documentId = jSONObject.get("uuid").toString();
             } else {
-                LogUtil.info(getClass().getName(), "Request failed: " + Integer.toString(response.code()));
+                LogUtil.error(
+                    getClass().getName(),
+                    null,
+                    "Error calling createFileApi - Error Code=" + response.code() + ", Message=" + response.message()
+                );
                 return null;
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            LogUtil.error(getClass().getName(), e, "IOException in createFileApi: " + e.getMessage());
         }
         return documentId;
     }
@@ -146,11 +175,15 @@ public class DMSOpenKMUtil {
                 JSONObject jSONObject = new JSONObject(responseBody);
                 version = jSONObject.get("name").toString();
             } else {
-                LogUtil.info(getClass().getName(), "Request failed: " + Integer.toString(response.code()));
+                LogUtil.error(
+                    getClass().getName(),
+                    null,
+                    "Error calling updateFileAfterCheckoutApi - Error Code=" + response.code() + ", Message=" + response.message()
+                );
                 return null;
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            LogUtil.error(getClass().getName(), e, "IOException in updateFileAfterCheckoutApi: " + e.getMessage());
         }
         return version;
     }
@@ -173,7 +206,7 @@ public class DMSOpenKMUtil {
             CloseableHttpResponse httpresponse = httpclient.execute(deleteRequest);
             apiResponse.setResponseCode(httpresponse.getStatusLine().getStatusCode());
         } catch (Exception ex) {
-            LogUtil.error(getClass().getName(), ex, ex.getMessage());
+            LogUtil.error(getClass().getName(), ex, "Error calling deleteApi: " + ex.getMessage());
         }
         return apiResponse; 
     }
@@ -199,7 +232,7 @@ public class DMSOpenKMUtil {
                 apiResponse.setResponseBody(EntityUtils.toString(httpresponse.getEntity()));
             }
         } catch (Exception ex) {
-            LogUtil.error(getClass().getName(), ex, ex.getMessage());
+            LogUtil.error(getClass().getName(), ex, "Error calling getApi: " + ex.getMessage());
         }
         return apiResponse;
     }
@@ -225,7 +258,7 @@ public class DMSOpenKMUtil {
                 apiResponse.setResponseBody(EntityUtils.toString(httpresponse.getEntity()));
             }
         } catch (Exception ex) {
-            LogUtil.error(getClass().getName(), ex, ex.getMessage());
+            LogUtil.error(getClass().getName(), ex, "Error calling putApi: " + ex.getMessage());
         }
         return apiResponse;
     }

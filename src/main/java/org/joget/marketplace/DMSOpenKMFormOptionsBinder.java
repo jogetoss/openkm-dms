@@ -62,7 +62,7 @@ public class DMSOpenKMFormOptionsBinder extends FormBinder implements FormLoadOp
             openkmURLPort = url.getPort(); 
 
         } catch (Exception e) {
-            LogUtil.error(this.getClassName(), e, e.getMessage());
+            LogUtil.error(this.getClassName(), e, "Error parsing OpenKM URL in FormOptionsBinder.load: " + e.getMessage());
         }
 
         boolean formBuilderActive = FormUtil.isFormBuilderActive();
@@ -76,6 +76,8 @@ public class DMSOpenKMFormOptionsBinder extends FormBinder implements FormLoadOp
                 emptyRow.setProperty(FormUtil.PROPERTY_LABEL, rootPath);
                 emptyRow.setProperty(FormUtil.PROPERTY_GROUPING, "");
                 results.add(emptyRow);
+            } else {
+                DMSOpenKMUtil.logApiError("Failed to retrieve root folder path from OpenKM", getRootFolderApiResponse);
             }
         
             results = getChildrenFolders(results, openkmURL, folderRootID, username, password, openkmURLHost, openkmURLPort);
@@ -84,10 +86,13 @@ public class DMSOpenKMFormOptionsBinder extends FormBinder implements FormLoadOp
         return results;
     }
 
-      public FormRowSet getChildrenFolders(FormRowSet results, String openkmURL, String folderRootID, String username, String password, String openkmURLHost,Integer openkmURLPort) {
+    public FormRowSet getChildrenFolders(FormRowSet results, String openkmURL, String folderRootID, String username, String password, String openkmURLHost,Integer openkmURLPort) {
         DMSOpenKMUtil openkmUtil = new DMSOpenKMUtil();
         ApiResponse getChildrenFoldersApiResponse = openkmUtil.getApi(openkmURL + "/services/rest/folder/getChildren?fldId=" + folderRootID, username, password, openkmURLHost, openkmURLPort);
-        if(getChildrenFoldersApiResponse.getResponseBody().startsWith("{")){
+        if (getChildrenFoldersApiResponse != null 
+                && getChildrenFoldersApiResponse.getResponseCode() == 200
+                && getChildrenFoldersApiResponse.getResponseBody() != null
+                && getChildrenFoldersApiResponse.getResponseBody().startsWith("{")) {
             JSONObject jsonObjectFolders = new JSONObject(getChildrenFoldersApiResponse.getResponseBody());
             
             if (jsonObjectFolders.length() != 0) {
@@ -107,6 +112,7 @@ public class DMSOpenKMFormOptionsBinder extends FormBinder implements FormLoadOp
                 }
             }
         } else {
+            DMSOpenKMUtil.logApiError("Failed to retrieve children folders from OpenKM", getChildrenFoldersApiResponse);
             FormRow emptyRow = new FormRow();
             emptyRow.setProperty(FormUtil.PROPERTY_VALUE, "Unable to retrieve value from OpenKM");
             emptyRow.setProperty(FormUtil.PROPERTY_LABEL, "Unable to retrieve value from OpenKM");

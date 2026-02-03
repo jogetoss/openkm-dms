@@ -100,7 +100,7 @@ public class DMSOpenKMFileUpload extends FileUpload {
             protocol = url.getProtocol(); 
             hostAndPort = url.getHost() + (url.getPort() != -1 ? (":" + url.getPort()) : "");
         } catch (Exception e) {
-            LogUtil.error(this.getClassName(), e, e.getMessage());
+            LogUtil.error(this.getClassName(), e, "Error parsing OpenKM URL in renderTemplate: " + e.getMessage());
         }
         
         if (Boolean.parseBoolean(dataModel.get("includeMetaData").toString())) {
@@ -109,8 +109,10 @@ public class DMSOpenKMFileUpload extends FileUpload {
                 ApiResponse authApiResponse = openkmUtil.authApi(openkmURL + "/services/rest/auth/login", username, password, openkmURLHost, openkmURLPort);
                 if (authApiResponse != null && authApiResponse.getResponseCode() != 204) {
                     dataModel.put("error", "Authentication ERROR");
+                    DMSOpenKMUtil.logApiError("OpenKM authentication failed", authApiResponse);
                 }
             } catch (Exception e) {
+                LogUtil.error(this.getClassName(), e, "Error during OpenKM authentication: " + e.getMessage());
                 dataModel.put("error", e.getLocalizedMessage());
             }
         }
@@ -366,7 +368,7 @@ public class DMSOpenKMFileUpload extends FileUpload {
             openkmURLPort = url.getPort(); 
 
         } catch (Exception e) {
-            LogUtil.error(this.getClassName(), e, e.getMessage());
+            LogUtil.error(this.getClassName(), e, "Error parsing OpenKM URL in formatData: " + e.getMessage());
         }
         
         FormRowSet rowSet = null;
@@ -453,13 +455,13 @@ public class DMSOpenKMFileUpload extends FileUpload {
                             if(r.contains(file.getName())){
                                 if (getPropertyString("sameFileUpload").equals("version")) {
                                     // checkout file to replace version
-                                    ApiResponse checkoutApiResponse = openkmUtil.getApi(openkmURL + "/services/rest/document/checkout?docId=" + documentId, username, password, openkmURLHost, openkmURLPort);
-                                    if (checkoutApiResponse != null && checkoutApiResponse.getResponseCode() == 204) {
-                                        checkoutDocs.add(r);
-                                        remove.remove(r);
-                                    } else {
-                                        LogUtil.info(getClassName(), checkoutApiResponse.getResponseBody());
-                                    }
+                            ApiResponse checkoutApiResponse = openkmUtil.getApi(openkmURL + "/services/rest/document/checkout?docId=" + documentId, username, password, openkmURLHost, openkmURLPort);
+                            if (checkoutApiResponse != null && checkoutApiResponse.getResponseCode() == 204) {
+                                checkoutDocs.add(r);
+                                remove.remove(r);
+                            } else {
+                                DMSOpenKMUtil.logApiError("Failed to checkout document from OpenKM", checkoutApiResponse);
+                            }
                                 }
                             }
                         }
@@ -476,7 +478,7 @@ public class DMSOpenKMFileUpload extends FileUpload {
                         // delete file(s) from openkm
                         ApiResponse deleteFileApiResponse = openkmUtil.deleteApi(openkmURL + "/services/rest/document/delete?docId=" + documentId, username, password, openkmURLHost, openkmURLPort);    
                         if (deleteFileApiResponse != null && deleteFileApiResponse.getResponseCode() != 204) {
-                            LogUtil.info(getClassName(), deleteFileApiResponse.getResponseBody());
+                            DMSOpenKMUtil.logApiError("Failed to delete file from OpenKM", deleteFileApiResponse);
                         }
 
                         // delete folder that contains the file above
@@ -488,12 +490,12 @@ public class DMSOpenKMFileUpload extends FileUpload {
 
                                     ApiResponse deleteFolderApiResponse = openkmUtil.deleteApi(openkmURL + "/services/rest/folder/delete?fldId=" + folderId, username, password, openkmURLHost, openkmURLPort);    
                                     if (deleteFolderApiResponse != null && deleteFolderApiResponse.getResponseCode() != 204) {
-                                        LogUtil.info(getClassName(), deleteFolderApiResponse.getResponseBody());
+                                        DMSOpenKMUtil.logApiError("Failed to delete folder from OpenKM", deleteFolderApiResponse);
                                     } else {
                                         folderName = "";
                                     }
                                 } else {
-                                    LogUtil.info(getClassName(), getFolderIdApiResponse.getResponseBody());
+                                    DMSOpenKMUtil.logApiError("Failed to get folder ID from OpenKM", getFolderIdApiResponse);
                                 }
                             }
                         }
@@ -503,10 +505,22 @@ public class DMSOpenKMFileUpload extends FileUpload {
                 if (filesList != null && !filesList.isEmpty()) {
                     for (File file : filesList) {
                         boolean fileProcessed = false;
-                        // create folder in openKM
+                        // create folder in OpenKM
                         if(createFolderFormID.equals("true")){
                             if (!openkmFileUploadPath.contains(folderName)) {
-                                openkmUtil.createFolderApi(openkmURL + "/services/rest/folder/createSimple",  username, password, openkmURLHost, openkmURLPort, folderName, openkmFileUploadPath);
+                                ApiResponse createFolderResponse = openkmUtil.createFolderApi(
+                                        openkmURL + "/services/rest/folder/createSimple",
+                                        username, password, openkmURLHost, openkmURLPort, folderName, openkmFileUploadPath);
+
+                                if (createFolderResponse == null
+                                        || (createFolderResponse.getResponseCode() != 200
+                                            && createFolderResponse.getResponseCode() != 201
+                                            && createFolderResponse.getResponseCode() != 204)) {
+                                    DMSOpenKMUtil.logApiError("Failed to create folder in OpenKM", createFolderResponse);
+                                    formData.addFormError(id, "Failed to create folder in OpenKM for file \"" + file.getName() + "\".");
+                                    // stop processing further files; form submission will be blocked
+                                    break;
+                                }
                             } else {
                                 folderName = "";
                             }
@@ -545,7 +559,8 @@ public class DMSOpenKMFileUpload extends FileUpload {
                         }
 
                         if (documentId == null){
-                            formData.addFormError(id, "File \"" + file.getName() + "\" already exists at OpenKM");
+                            // document creation failed (e.g. 404 or other error from OpenKM)
+                            formData.addFormError(id, "Failed to upload file \"" + file.getName() + "\" to OpenKM.");
                         } else {
                             // lock file
                             if (getPropertyString("lockFile").equals("true")){
@@ -553,7 +568,7 @@ public class DMSOpenKMFileUpload extends FileUpload {
                                 if (checkoutApiResponse != null && checkoutApiResponse.getResponseCode() == 200) {
                                     LogUtil.info(getClassName(), "Successfully lock file \"" + file.getName() + "\" at OpenKM");
                                 } else {
-                                    LogUtil.info(getClassName(), checkoutApiResponse.getResponseBody());
+                                    DMSOpenKMUtil.logApiError("Failed to lock document in OpenKM", checkoutApiResponse);
                                 }
                             }
 

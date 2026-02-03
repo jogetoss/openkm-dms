@@ -66,7 +66,7 @@ public class DMSOpenKMDatalistFormatter extends DataListColumnFormatDefault {
                     protocol = url.getProtocol(); 
                     hostAndPort = url.getHost() + (url.getPort() != -1 ? (":" + url.getPort()) : "");
                 } catch (Exception e) {
-                    LogUtil.error(this.getClassName(), e, e.getMessage());
+                    LogUtil.error(this.getClassName(), e, "Error parsing OpenKM URL in DatalistFormatter: " + e.getMessage());
                 }
 
                 // get file path of this record
@@ -110,7 +110,7 @@ public class DMSOpenKMDatalistFormatter extends DataListColumnFormatDefault {
                     result.deleteCharAt(result.length() - 1);
                 }
             } catch (Exception e) {
-                LogUtil.error(getClassName(), e, "");
+                LogUtil.error(getClassName(), e, "Error formatting OpenKM file links in DatalistFormatter: " + e.getMessage());
             }
         }
         return result.toString();
