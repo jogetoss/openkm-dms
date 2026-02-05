@@ -107,8 +107,6 @@ public class DMSOpenKMUtil {
             if (apiResponse == null) {
                 apiResponse = new ApiResponse();
             }
-            apiResponse.setResponseCode(500);
-            apiResponse.setResponseBody(ex.getMessage());
         }
         return apiResponse;
     }

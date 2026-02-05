@@ -508,19 +508,7 @@ public class DMSOpenKMFileUpload extends FileUpload {
                         // create folder in OpenKM
                         if(createFolderFormID.equals("true")){
                             if (!openkmFileUploadPath.contains(folderName)) {
-                                ApiResponse createFolderResponse = openkmUtil.createFolderApi(
-                                        openkmURL + "/services/rest/folder/createSimple",
-                                        username, password, openkmURLHost, openkmURLPort, folderName, openkmFileUploadPath);
-
-                                if (createFolderResponse == null
-                                        || (createFolderResponse.getResponseCode() != 200
-                                            && createFolderResponse.getResponseCode() != 201
-                                            && createFolderResponse.getResponseCode() != 204)) {
-                                    DMSOpenKMUtil.logApiError("Failed to create folder in OpenKM", createFolderResponse);
-                                    formData.addFormError(id, "Failed to create folder in OpenKM for file \"" + file.getName() + "\".");
-                                    // stop processing further files; form submission will be blocked
-                                    break;
-                                }
+                                openkmUtil.createFolderApi(openkmURL + "/services/rest/folder/createSimple",username, password, openkmURLHost, openkmURLPort, folderName, openkmFileUploadPath);
                             } else {
                                 folderName = "";
                             }

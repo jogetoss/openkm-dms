@@ -221,9 +221,15 @@
              {
                 "name":"openkmFileUploadPath",
                 "label":"@@org.joget.marketplace.openkmfileupload.openkmFileUploadPath@@",
+                "description":"@@org.joget.marketplace.openkmfileupload.openkmFileUploadPath.desc@@",
                 "type":"selectbox",
                 "options_ajax_on_change":"formDefId",
                 "options_ajax":"[CONTEXT_PATH]/web/json/console/app[APP_PATH]/form/columns/options"
+             },
+             {
+                "label": "@@org.joget.marketplace.openkmfileupload.fileHandling@@",
+                "type": "header",
+                "description": "@@org.joget.marketplace.openkmfileupload.fileHandling.desc@@"
              },
              {
                 "name": "sameFileUpload",
@@ -242,7 +248,7 @@
                     }
                 ]        
             },
-             {
+            {
                 "name": "removeFile",
                 "label": "@@org.joget.marketplace.openkmfileupload.removeFile@@",
                 "type": "checkbox",
@@ -255,24 +261,10 @@
                 ]
             },
             {
-                "name":"createFolderFormID",
-                "label":"@@org.joget.marketplace.openkmfileupload.createFolderFormID@@",
-                "type":"checkbox",
-                "options":[
-                   {
-                      "value":"true",
-                      "label":""
-                   }
-                ]
-             },
-             {
-                "name": "removeFolder",
-                "label": "@@org.joget.marketplace.openkmfileupload.removeFolder@@",
-                "description": "@@ org.joget.marketplace.openkmfileupload.removeFolder.desc@@",
+                "name": "lockFile",
+                "label": "@@org.joget.marketplace.openkmfileupload.lockFile@@",
                 "type": "checkbox",
                 "value": "false",
-                "control_field":"createFolderFormID",
-                "control_value":"true",
                 "options": [
                     {
                         "value": "true",
@@ -281,10 +273,29 @@
                 ]
             },
             {
-                "name": "lockFile",
-                "label": "@@org.joget.marketplace.openkmfileupload.lockFile@@",
+                "label": "@@org.joget.marketplace.openkmfileupload.folderHandling@@",
+                "type": "header"           
+            },
+            {
+                "name":"createFolderFormID",
+                "label":"@@org.joget.marketplace.openkmfileupload.createFolderFormID@@",
+                "type":"checkbox",
+                "value": "false",
+                "options":[
+                   {
+                      "value":"true",
+                      "label":""
+                   }
+                ]
+            },
+            {
+                "name": "removeFolder",
+                "label": "@@org.joget.marketplace.openkmfileupload.removeFolder@@",
+                "description": "@@ org.joget.marketplace.openkmfileupload.removeFolder.desc@@",
                 "type": "checkbox",
                 "value": "false",
+                "control_field":"createFolderFormID",
+                "control_value":"true",
                 "options": [
                     {
                         "value": "true",
