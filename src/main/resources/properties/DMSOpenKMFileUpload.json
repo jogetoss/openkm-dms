@@ -274,7 +274,8 @@
             },
             {
                 "label": "@@org.joget.marketplace.openkmfileupload.folderHandling@@",
-                "type": "header"           
+                "type": "header",
+                "description": "@@org.joget.marketplace.openkmfileupload.folderHandling.desc@@"        
             },
             {
                 "name":"createFolderFormID",
