@@ -26,34 +26,52 @@
                 "required": "True"
             },
             {
-                "label": "@@org.joget.marketplace.openkmdatalistformatter.fieldMappings@@",
-                "type": "header"
+                "label": "@@org.joget.marketplace.openkmdatalistformatter.fileDownloadHandlingOptions@@",
+                "type": "header",
+                "description": "@@org.joget.marketplace.openkmdatalistformatter.fileDownloadHandlingOptions.desc@@"    
             },
             {
-                "name":"formDefId",
-                "label":"@@org.joget.marketplace.openkmdatalistformatter.formDefId@@",
-                "type":"selectbox",
-                "options_ajax":"[CONTEXT_PATH]/web/json/console/app[APP_PATH]/forms/options"
-             },
-             {
-                "name":"openkmFileUploadPath",
-                "label":"@@org.joget.marketplace.openkmdatalistformatter.openkmFileUploadPath@@",
-                "type":"selectbox",
-                "options_ajax_on_change":"formDefId",
-                "options_ajax":"[CONTEXT_PATH]/web/json/console/app[APP_PATH]/form/columns/options"
-             },
-             {
                 "name":"enableDownload",
                 "label":"@@org.joget.marketplace.openkmdatalistformatter.enableDownload@@",
                 "type":"checkbox",
-                "value":"False",
                 "options":[
                    {
                       "value":"true",
                       "label":""
                    }
                 ]
+            },
+             {
+                "name":"downloadCreateFolderFormID",
+                "label":"@@org.joget.marketplace.openkmdatalistformatter.downloadCreateFolderFormID@@",
+                "type":"checkbox",
+                "control_field":"enableDownload",
+                "control_value":"true",
+                "options":[
+                   {
+                      "value":"true",
+                      "label":""
+                   }
+                ]
+             },
+            {
+                "name":"formDefId",
+                "label":"@@org.joget.marketplace.openkmdatalistformatter.formDefId@@",
+                "type":"selectbox",
+                "options_ajax":"[CONTEXT_PATH]/web/json/console/app[APP_PATH]/forms/options",
+                "control_field" : "downloadCreateFolderFormID",
+                "control_value" : ""
+             },
+             {
+                "name":"openkmFileUploadPath",
+                "label":"@@org.joget.marketplace.openkmdatalistformatter.openkmFileUploadPath@@",
+                "type":"selectbox",
+                "options_ajax_on_change":"formDefId",
+                "options_ajax":"[CONTEXT_PATH]/web/json/console/app[APP_PATH]/form/columns/options",
+                "control_field" : "downloadCreateFolderFormID",
+                "control_value" : ""
              }
+           
         ]
     }
 ]

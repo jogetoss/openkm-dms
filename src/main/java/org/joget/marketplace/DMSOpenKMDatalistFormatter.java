@@ -9,6 +9,7 @@ import org.joget.apps.app.service.AppUtil;
 import org.joget.apps.datalist.model.DataList;
 import org.joget.apps.datalist.model.DataListColumn;
 import org.joget.apps.datalist.model.DataListColumnFormatDefault;
+import org.joget.apps.datalist.service.DataListService;
 import org.joget.commons.util.LogUtil;
 import org.joget.commons.util.SecurityUtil;
 import org.joget.commons.util.StringUtil;
@@ -55,11 +56,16 @@ public class DMSOpenKMDatalistFormatter extends DataListColumnFormatDefault {
                 String username = getPropertyString("username");
                 String password = getPropertyString("password");
                 String openkmURL = getPropertyString("openkmURL");
+                if (openkmURL.endsWith("/")) {
+                    openkmURL = openkmURL.substring(0, openkmURL.length() - 1);
+                }
                 String enableDownload = getPropertyString("enableDownload");
                 String protocol = "";
                 String hostAndPort = "";
                 String openkmFileUploadPathField = getPropertyString("openkmFileUploadPath");
                 String openkmFileUploadPath = "";
+                String downloadCreateFolderFormID = getPropertyString("downloadCreateFolderFormID");
+                String recordId = DataListService.evaluateColumnValueFromRow(row, dataList.getBinder().getPrimaryKeyColumnName()).toString();
         
                 try {
                     URL url = new URL(openkmURL);
@@ -69,11 +75,15 @@ public class DMSOpenKMDatalistFormatter extends DataListColumnFormatDefault {
                     LogUtil.error(this.getClassName(), e, "Error parsing OpenKM URL in DatalistFormatter: " + e.getMessage());
                 }
 
-                // get file path of this record
-                if (openkmFileUploadPathField != null && !openkmFileUploadPathField.equals("")) {
-                    openkmFileUploadPath = (String) LookupUtil.getBeanProperty(row, openkmFileUploadPathField);
+                // determine file download path
+                if (downloadCreateFolderFormID != null && !downloadCreateFolderFormID.equals("")) {
+                    openkmFileUploadPath = "/okm:root/" + recordId;
                 } else {
-                    openkmFileUploadPath = "/okm:root";
+                    if (openkmFileUploadPathField != null && !openkmFileUploadPathField.equals("")) {
+                        openkmFileUploadPath = (String) LookupUtil.getBeanProperty(row, openkmFileUploadPathField);
+                    } else {
+                        openkmFileUploadPath = "/okm:root";
+                    }
                 }
 
                 JSONObject jsonParams = new JSONObject();

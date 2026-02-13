@@ -52,6 +52,9 @@ public class DMSOpenKMFormOptionsBinder extends FormBinder implements FormLoadOp
         String username = getPropertyString("username");
         String password = getPropertyString("password");
         String openkmURL = getPropertyString("openkmURL");
+        if (openkmURL.endsWith("/")) {
+            openkmURL = openkmURL.substring(0, openkmURL.length() - 1);
+        }
         String folderRootID = getPropertyString("folderRootID");
         String openkmURLHost = "";
         Integer openkmURLPort = 0;

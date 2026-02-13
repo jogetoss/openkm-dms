@@ -85,6 +85,9 @@ public class DMSOpenKMFileUpload extends FileUpload {
         String username = getPropertyString("username");
         String password = getPropertyString("password");
         String openkmURL = getPropertyString("openkmURL");
+        if (openkmURL.endsWith("/")) {
+            openkmURL = openkmURL.substring(0, openkmURL.length() - 1);
+        }
         String openkmFileUploadPathField = getPropertyString("openkmFileUploadPath");
         String createFolderFormID = getPropertyString("createFolderFormID");
         String openkmURLHost = "";
@@ -350,6 +353,9 @@ public class DMSOpenKMFileUpload extends FileUpload {
         String username = getPropertyString("username");
         String password = getPropertyString("password");
         String openkmURL = getPropertyString("openkmURL");
+        if (openkmURL.endsWith("/")) {
+            openkmURL = openkmURL.substring(0, openkmURL.length() - 1);
+        }
         String openkmFileUploadPathField = getPropertyString("openkmFileUploadPath");
         String openkmFileUploadPath = formData.getRequestParameter(getPropertyString("openkmFileUploadPath"));
         // default path
